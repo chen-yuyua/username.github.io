@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>設計分室午餐點餐系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f39c12;
+            --background-color: #f5f7fa;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
+        body { 
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6; 
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { 
+            color: var(--primary-color);
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .content-wrapper {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .form-section, .menu-section {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input, textarea, button {
+            margin-bottom: 15px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3a7bc8;
+        }
+        .menu-image img {
+            width: 400px;
+            height: 600px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+        #datetime {
+            text-align: center;
+            font-size: 1.2em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        #totalPrice {
+            text-align: right;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: var(--primary-color);
+        }
+        #exportButton, #clearButton {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+            margin-right: 10px;
+        }
+        #exportButton:hover, #clearButton:hover {
+            background-color: #e67e22;
+        }
+        .button-group {
+            display: flex;
+            justify-content: flex-start;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>設計分室午餐點餐系統</h1>
+        <div id="datetime"></div>
+        
+        <div class="content-wrapper">
+            <div class="form-section">
+                <h2>訂餐表單</h2>
+                <form id="orderForm">
+                    <input type="text" name="name" placeholder="您的姓名" required>
+                    <input type="text" name="meal" placeholder="餐點名稱" required>
+                    <input type="number" name="price" placeholder="價格" step="0.01" min="0" required>
+                    <textarea name="note" placeholder="備註（如有特殊要求請填寫）" rows="3"></textarea>
+                    <button type="submit">提交訂單</button>
+                </form>
+            </div>
+            <div class="menu-section">
+                <div class="menu-image">
+                    <img id="menuImage" src="/api/placeholder/600/400" alt="今日菜單" />
+                </div>
+                <button id="changeImageButton">更換圖片</button>
+            </div>
+        </div>
+
+        <h2>今日訂單</h2>
+        <table id="orderTable">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>姓名</th>
+                    <th>餐點</th>
+                    <th>價格</th>
+                    <th>備註</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        
+        <div id="totalPrice">總價格: $0.00</div>
+        <div class="button-group">
+            <button id="exportButton">導出訂單為 Excel</button>
+            <button id="clearButton">清除資訊</button>
+        </div>
+    </div>
+
+    <script>
+        let totalPrice = 0;
+        let orderCount = 0;
+        let orders = [];
+
+        function updateDateTime() {
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('zh-TW', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false 
+            });
+            document.getElementById('datetime').textContent = dateTimeString;
+        }
+
+        function addOrder(name, meal, price, note) {
+            orderCount++;
+            const order = { name, meal, price: parseFloat(price), note };
+            orders.push(order);
+            totalPrice += order.price;
+            updateOrderTable();
+            updateTotalPrice();
+            saveOrdersToLocalStorage();
+        }
+
+        function updateOrderTable() {
+            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            orders.forEach((order, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${order.name}</td>
+                    <td>${order.meal}</td>
+                    <td>$${order.price.toFixed(2)}</td>
+                    <td>${order.note}</td>
+                `;
+            });
+        }
+
+        function updateTotalPrice() {
+            document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
+        }
+
+        function saveOrdersToLocalStorage() {
+            localStorage.setItem('orders', JSON.stringify(orders));
+            localStorage.setItem('totalPrice', totalPrice);
+            localStorage.setItem('orderCount', orderCount);
+        }
+
+        function loadOrdersFromLocalStorage() {
+            const savedOrders = localStorage.getItem('orders');
+            if (savedOrders) {
+                orders = JSON.parse(savedOrders);
+                totalPrice = parseFloat(localStorage.getItem('totalPrice') || '0');
+                orderCount = parseInt(localStorage.getItem('orderCount') || '0');
+                updateOrderTable();
+                updateTotalPrice();
+            }
+        }
+
+        function clearOrders() {
+            if (confirm('確定要刪除所有訂單資訊嗎？')) {
+                orders = [];
+                totalPrice = 0;
+                orderCount = 0;
+                updateOrderTable();
+                updateTotalPrice();
+                saveOrdersToLocalStorage();
+            }
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = this.elements['name'].value;
+            const meal = this.elements['meal'].value;
+            const price = this.elements['price'].value;
+            const note = this.elements['note'].value;
+            addOrder(name, meal, price, note);
+            this.reset();
+        });
+
+        document.getElementById('exportButton').addEventListener('click', function() {
+            const table = document.getElementById('orderTable');
+            let csvContent = "\uFEFF"; // BOM for UTF-8
+
+            // Add headers
+            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
+            csvContent += headers.join(',') + "\n";
+
+            // Add rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
+                csvContent += rowData.join(',') + "\n";
+            });
+
+            // Add total price
+            csvContent += `"","","","",${document.getElementById('totalPrice').textContent}\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `lunch_orders_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        document.getElementById('clearButton').addEventListener('click', clearOrders);
+
+        document.getElementById('changeImageButton').addEventListener('click', function() {
+            const imageUrl = prompt('請輸入圖片URL:');
+            if (imageUrl) {
+                const menuImage = document.getElementById('menuImage');
+                menuImage.src = imageUrl;
+                menuImage.onclick = function() {
+                    window.open(imageUrl, '_blank');
+                }
+            }
+        });
+
+        // 初始化
+        updateDateTime();
+        loadOrdersFromLocalStorage();
+
+        // 每分鐘更新日期時間
+        setInterval(updateDateTime, 60000);
+    </script>
+</body>
+</html>
