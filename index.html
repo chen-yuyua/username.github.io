@@ -130,6 +130,20 @@
             justify-content: flex-start;
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script>
+        var firebaseConfig = {
+            apiKey: "您的 API 密鑰",
+            authDomain: "您的專案 ID.firebaseapp.com",
+            projectId: "您的專案 ID",
+            storageBucket: "您的專案 ID.appspot.com",
+            messagingSenderId: "您的消息發送者 ID",
+            appId: "您的應用 ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.firestore();
+    </script>
 </head>
 <body>
     <div class="container">
@@ -202,7 +216,7 @@
             totalPrice += order.price;
             updateOrderTable();
             updateTotalPrice();
-            saveOrdersToLocalStorage();
+            saveOrdersToFirestore();
         }
 
         function updateOrderTable() {
@@ -224,21 +238,35 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        function saveOrdersToLocalStorage() {
-            localStorage.setItem('orders', JSON.stringify(orders));
-            localStorage.setItem('totalPrice', totalPrice);
-            localStorage.setItem('orderCount', orderCount);
+        function saveOrdersToFirestore() {
+            db.collection("orders").doc("orderData").set({
+                orders: orders,
+                totalPrice: totalPrice,
+                orderCount: orderCount
+            })
+            .then(() => {
+                console.log("Document successfully written!");
+            })
+            .catch((error) => {
+                console.error("Error writing document: ", error);
+            });
         }
 
-        function loadOrdersFromLocalStorage() {
-            const savedOrders = localStorage.getItem('orders');
-            if (savedOrders) {
-                orders = JSON.parse(savedOrders);
-                totalPrice = parseFloat(localStorage.getItem('totalPrice') || '0');
-                orderCount = parseInt(localStorage.getItem('orderCount') || '0');
-                updateOrderTable();
-                updateTotalPrice();
-            }
+        function loadOrdersFromFirestore() {
+            db.collection("orders").doc("orderData").get().then((doc) => {
+                if (doc.exists) {
+                    var data = doc.data();
+                    orders = data.orders || [];
+                    totalPrice = data.totalPrice || 0;
+                    orderCount = data.orderCount || 0;
+                    updateOrderTable();
+                    updateTotalPrice();
+                } else {
+                    console.log("No such document!");
+                }
+            }).catch((error) => {
+                console.log("Error getting document:", error);
+            });
         }
 
         function clearOrders() {
@@ -248,7 +276,7 @@
                 orderCount = 0;
                 updateOrderTable();
                 updateTotalPrice();
-                saveOrdersToLocalStorage();
+                saveOrdersToFirestore();
             }
         }
 
@@ -308,7 +336,7 @@
 
         // 初始化
         updateDateTime();
-        loadOrdersFromLocalStorage();
+        loadOrdersFromFirestore();
 
         // 每分鐘更新日期時間
         setInterval(updateDateTime, 60000);
