@@ -210,10 +210,16 @@
         }
 
         function addOrder(name, meal, price, note) {
-            orderCount++;
-            const order = { name, meal, price: parseFloat(price), note };
+            const order = { 
+                id: Date.now().toString(), // 添加唯一ID
+                name, 
+                meal, 
+                price: parseFloat(price), 
+                note 
+            };
             orders.push(order);
             totalPrice += order.price;
+            orderCount++;
             updateOrderTable();
             updateTotalPrice();
             saveOrdersToFirestore();
@@ -240,10 +246,10 @@
 
         function saveOrdersToFirestore() {
             db.collection("orders").doc("orderData").set({
-                orders: orders,
-                totalPrice: totalPrice,
-                orderCount: orderCount
-            })
+                orders: firebase.firestore.FieldValue.arrayUnion(...orders),
+                totalPrice: firebase.firestore.FieldValue.increment(totalPrice),
+                orderCount: firebase.firestore.FieldValue.increment(orderCount)
+            }, { merge: true })
             .then(() => {
                 console.log("Document successfully written!");
             })
@@ -252,31 +258,32 @@
             });
         }
 
-        function loadOrdersFromFirestore() {
-            db.collection("orders").doc("orderData").get().then((doc) => {
-                if (doc.exists) {
-                    var data = doc.data();
-                    orders = data.orders || [];
-                    totalPrice = data.totalPrice || 0;
-                    orderCount = data.orderCount || 0;
-                    updateOrderTable();
-                    updateTotalPrice();
-                } else {
-                    console.log("No such document!");
-                }
-            }).catch((error) => {
-                console.log("Error getting document:", error);
-            });
+        function setupRealtimeListener() {
+            db.collection("orders").doc("orderData")
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        var data = doc.data();
+                        orders = data.orders || [];
+                        totalPrice = data.totalPrice || 0;
+                        orderCount = data.orderCount || 0;
+                        updateOrderTable();
+                        updateTotalPrice();
+                    }
+                });
         }
 
         function clearOrders() {
             if (confirm('確定要刪除所有訂單資訊嗎？')) {
-                orders = [];
-                totalPrice = 0;
-                orderCount = 0;
-                updateOrderTable();
-                updateTotalPrice();
-                saveOrdersToFirestore();
+                db.collection("orders").doc("orderData").delete().then(() => {
+                    orders = [];
+                    totalPrice = 0;
+                    orderCount = 0;
+                    updateOrderTable();
+                    updateTotalPrice();
+                    console.log("Document successfully deleted!");
+                }).catch((error) => {
+                    console.error("Error removing document: ", error);
+                });
             }
         }
 
@@ -335,11 +342,11 @@
         });
 
         // 初始化
-        updateDateTime();
-        loadOrdersFromFirestore();
-
-        // 每分鐘更新日期時間
-        setInterval(updateDateTime, 60000);
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDateTime();
+            setupRealtimeListener();
+            setInterval(updateDateTime, 60000);
+        });
     </script>
 </body>
 </html>
