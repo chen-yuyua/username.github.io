@@ -130,20 +130,6 @@
             justify-content: flex-start;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-    <script>
-        var firebaseConfig = {
-            apiKey: "您的 API 密鑰",
-            authDomain: "您的專案 ID.firebaseapp.com",
-            projectId: "您的專案 ID",
-            storageBucket: "您的專案 ID.appspot.com",
-            messagingSenderId: "您的消息發送者 ID",
-            appId: "您的應用 ID"
-        };
-        firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
-    </script>
 </head>
 <body>
     <div class="container">
@@ -210,19 +196,13 @@
         }
 
         function addOrder(name, meal, price, note) {
-            const order = { 
-                id: Date.now().toString(), // 添加唯一ID
-                name, 
-                meal, 
-                price: parseFloat(price), 
-                note 
-            };
+            orderCount++;
+            const order = { name, meal, price: parseFloat(price), note };
             orders.push(order);
             totalPrice += order.price;
-            orderCount++;
             updateOrderTable();
             updateTotalPrice();
-            saveOrdersToFirestore();
+            saveOrdersToLocalStorage();
         }
 
         function updateOrderTable() {
@@ -244,46 +224,31 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        function saveOrdersToFirestore() {
-            db.collection("orders").doc("orderData").set({
-                orders: firebase.firestore.FieldValue.arrayUnion(...orders),
-                totalPrice: firebase.firestore.FieldValue.increment(totalPrice),
-                orderCount: firebase.firestore.FieldValue.increment(orderCount)
-            }, { merge: true })
-            .then(() => {
-                console.log("Document successfully written!");
-            })
-            .catch((error) => {
-                console.error("Error writing document: ", error);
-            });
+        function saveOrdersToLocalStorage() {
+            localStorage.setItem('orders', JSON.stringify(orders));
+            localStorage.setItem('totalPrice', totalPrice);
+            localStorage.setItem('orderCount', orderCount);
         }
 
-        function setupRealtimeListener() {
-            db.collection("orders").doc("orderData")
-                .onSnapshot((doc) => {
-                    if (doc.exists) {
-                        var data = doc.data();
-                        orders = data.orders || [];
-                        totalPrice = data.totalPrice || 0;
-                        orderCount = data.orderCount || 0;
-                        updateOrderTable();
-                        updateTotalPrice();
-                    }
-                });
+        function loadOrdersFromLocalStorage() {
+            const savedOrders = localStorage.getItem('orders');
+            if (savedOrders) {
+                orders = JSON.parse(savedOrders);
+                totalPrice = parseFloat(localStorage.getItem('totalPrice') || '0');
+                orderCount = parseInt(localStorage.getItem('orderCount') || '0');
+                updateOrderTable();
+                updateTotalPrice();
+            }
         }
 
         function clearOrders() {
             if (confirm('確定要刪除所有訂單資訊嗎？')) {
-                db.collection("orders").doc("orderData").delete().then(() => {
-                    orders = [];
-                    totalPrice = 0;
-                    orderCount = 0;
-                    updateOrderTable();
-                    updateTotalPrice();
-                    console.log("Document successfully deleted!");
-                }).catch((error) => {
-                    console.error("Error removing document: ", error);
-                });
+                orders = [];
+                totalPrice = 0;
+                orderCount = 0;
+                updateOrderTable();
+                updateTotalPrice();
+                saveOrdersToLocalStorage();
             }
         }
 
@@ -342,11 +307,11 @@
         });
 
         // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            updateDateTime();
-            setupRealtimeListener();
-            setInterval(updateDateTime, 60000);
-        });
+        updateDateTime();
+        loadOrdersFromLocalStorage();
+
+        // 每分鐘更新日期時間
+        setInterval(updateDateTime, 60000);
     </script>
 </body>
 </html>
