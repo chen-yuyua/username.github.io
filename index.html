@@ -130,110 +130,6 @@
             justify-content: flex-start;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.2/firebase-database-compat.js"></script>
-    <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAs5nXFM6wvpG7Sbe9cEfpEbdgDwH5Eudo",
-            authDomain: "lunch-order-2f467.firebaseapp.com",
-            databaseURL: "https://lunch-order-2f467-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "lunch-order-2f467",
-            storageBucket: "lunch-order-2f467.appspot.com",
-            messagingSenderId: "38416716299",
-            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
-            measurementId: "G-TL1IE0E3V5"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        function updateDateTime() {
-            const now = new Date();
-            const dateTimeString = now.toLocaleString('zh-TW', { 
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit', 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: false 
-            });
-            document.getElementById('datetime').textContent = dateTimeString;
-        }
-
-        function addOrder(name, meal, price, note) {
-            const newOrderRef = db.ref('orders').push();
-            newOrderRef.set({
-                name: name,
-                meal: meal,
-                price: parseFloat(price),
-                note: note
-            });
-        }
-
-        function loadOrders() {
-            const ordersRef = db.ref('orders');
-            ordersRef.on('value', (snapshot) => {
-                const orders = snapshot.val();
-                const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = '';
-                let totalPrice = 0;
-                let orderCount = 0;
-                for (let id in orders) {
-                    const order = orders[id];
-                    orderCount++;
-                    const row = tbody.insertRow();
-                    row.innerHTML = `
-                        <td>${orderCount}</td>
-                        <td>${order.name}</td>
-                        <td>${order.meal}</td>
-                        <td>$${order.price.toFixed(2)}</td>
-                        <td>${order.note}</td>
-                    `;
-                    totalPrice += order.price;
-                }
-                document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
-            });
-        }
-
-        function clearOrders() {
-            if (confirm('確定要刪除所有訂單資訊嗎？')) {
-                db.ref('orders').remove();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', (event) => {
-            updateDateTime();
-            loadOrders();
-
-            document.getElementById('orderForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const name = this.elements['name'].value;
-                const meal = this.elements['meal'].value;
-                const price = this.elements['price'].value;
-                const note = this.elements['note'].value;
-                addOrder(name, meal, price, note);
-                this.reset();
-            });
-
-            document.getElementById('clearButton').addEventListener('click', clearOrders);
-
-            document.getElementById('changeImageButton').addEventListener('click', function() {
-                const imageUrl = prompt('請輸入圖片URL:');
-                if (imageUrl) {
-                    const menuImage = document.getElementById('menuImage');
-                    menuImage.src = imageUrl;
-                    menuImage.onclick = function() {
-                        window.open(imageUrl, '_blank');
-                    }
-                }
-            });
-
-            // 每分鐘更新日期時間
-            setInterval(updateDateTime, 60000);
-        });
-    </script>
 </head>
 <body>
     <div class="container">
@@ -280,5 +176,164 @@
             <button id="clearButton">清除資訊</button>
         </div>
     </div>
+
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+
+    <!-- Add additional services that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsn5XFMWGwGp7SBeyCfpEbdgbWfSEud0",
+            authDomain: "lunch-order-2f467.firebaseapp.com",
+            databaseURL: "https://lunch-order-2f467-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "lunch-order-2f467",
+            storageBucket: "lunch-order-2f467.appspot.com",
+            messagingSenderId: "38416716299",
+            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
+            measurementId: "G-TL11E0E3V5"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database(app);
+
+        // Other JavaScript code to handle form submission, database operations, etc.
+        let totalPrice = 0;
+        let orderCount = 0;
+        let orders = [];
+
+        function updateDateTime() {
+            const now = new Date();
+            const dateTimeString = now.toLocaleString('zh-TW', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false 
+            });
+            document.getElementById('datetime').textContent = dateTimeString;
+        }
+
+        function addOrder(name, meal, price, note) {
+            orderCount++;
+            const order = { name, meal, price: parseFloat(price), note };
+            orders.push(order);
+            totalPrice += order.price;
+            updateOrderTable();
+            updateTotalPrice();
+            saveOrderToDatabase(order);
+        }
+
+        function updateOrderTable() {
+            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            orders.forEach((order, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${order.name}</td>
+                    <td>${order.meal}</td>
+                    <td>$${order.price.toFixed(2)}</td>
+                    <td>${order.note}</td>
+                `;
+            });
+        }
+
+        function updateTotalPrice() {
+            document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
+        }
+
+        function saveOrderToDatabase(order) {
+            const newOrderRef = database.ref('orders').push();
+            newOrderRef.set(order);
+        }
+
+        function loadOrdersFromDatabase() {
+            database.ref('orders').once('value', function(snapshot) {
+                snapshot.forEach(function(childSnapshot) {
+                    const order = childSnapshot.val();
+                    orders.push(order);
+                    totalPrice += order.price;
+                    orderCount++;
+                });
+                updateOrderTable();
+                updateTotalPrice();
+            });
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = this.elements['name'].value;
+            const meal = this.elements['meal'].value;
+            const price = this.elements['price'].value;
+            const note = this.elements['note'].value;
+            addOrder(name, meal, price, note);
+            this.reset();
+        });
+
+        document.getElementById('exportButton').addEventListener('click', function() {
+            const table = document.getElementById('orderTable');
+            let csvContent = "\uFEFF"; // BOM for UTF-8
+
+            // Add headers
+            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
+            csvContent += headers.join(',') + "\n";
+
+            // Add rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
+                csvContent += rowData.join(',') + "\n";
+            });
+
+            // Add total price
+            csvContent += `"","","","",${document.getElementById('totalPrice').textContent}\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `lunch_orders_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        document.getElementById('clearButton').addEventListener('click', function() {
+            if (confirm('確定要刪除所有訂單資訊嗎？')) {
+                orders = [];
+                totalPrice = 0;
+                orderCount = 0;
+                updateOrderTable();
+                updateTotalPrice();
+                database.ref('orders').remove();
+            }
+        });
+
+        document.getElementById('changeImageButton').addEventListener('click', function() {
+            const imageUrl = prompt('請輸入圖片URL:');
+            if (imageUrl) {
+                const menuImage = document.getElementById('menuImage');
+                menuImage.src = imageUrl;
+                menuImage.onclick = function() {
+                    window.open(imageUrl, '_blank');
+                }
+            }
+        });
+
+        // 初始化
+        updateDateTime();
+        loadOrdersFromDatabase();
+
+        // 每分鐘更新日期時間
+        setInterval(updateDateTime, 60000);
+    </script>
 </body>
 </html>
