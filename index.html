@@ -177,7 +177,25 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script>
+        // Firebase 配置
+        var firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        var database = firebase.database();
+
         let totalPrice = 0;
         let orderCount = 0;
         let orders = [];
@@ -202,7 +220,7 @@
             totalPrice += order.price;
             updateOrderTable();
             updateTotalPrice();
-            saveOrdersToLocalStorage();
+            saveOrdersToFirebase();
         }
 
         function updateOrderTable() {
@@ -224,21 +242,25 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        function saveOrdersToLocalStorage() {
-            localStorage.setItem('orders', JSON.stringify(orders));
-            localStorage.setItem('totalPrice', totalPrice);
-            localStorage.setItem('orderCount', orderCount);
+        function saveOrdersToFirebase() {
+            firebase.database().ref('orders').set({
+                orders: orders,
+                totalPrice: totalPrice,
+                orderCount: orderCount
+            });
         }
 
-        function loadOrdersFromLocalStorage() {
-            const savedOrders = localStorage.getItem('orders');
-            if (savedOrders) {
-                orders = JSON.parse(savedOrders);
-                totalPrice = parseFloat(localStorage.getItem('totalPrice') || '0');
-                orderCount = parseInt(localStorage.getItem('orderCount') || '0');
-                updateOrderTable();
-                updateTotalPrice();
-            }
+        function loadOrdersFromFirebase() {
+            firebase.database().ref('orders').once('value', function(snapshot) {
+                const data = snapshot.val();
+                if (data) {
+                    orders = data.orders || [];
+                    totalPrice = data.totalPrice || 0;
+                    orderCount = data.orderCount || 0;
+                    updateOrderTable();
+                    updateTotalPrice();
+                }
+            });
         }
 
         function clearOrders() {
@@ -248,7 +270,7 @@
                 orderCount = 0;
                 updateOrderTable();
                 updateTotalPrice();
-                saveOrdersToLocalStorage();
+                saveOrdersToFirebase();
             }
         }
 
@@ -308,7 +330,7 @@
 
         // 初始化
         updateDateTime();
-        loadOrdersFromLocalStorage();
+        loadOrdersFromFirebase();
 
         // 每分鐘更新日期時間
         setInterval(updateDateTime, 60000);
