@@ -250,7 +250,7 @@
         }
 
         function saveMenuImage(url) {
-            db.collection("settings").doc("menuImage").set({ url: url })
+            db.collection("settings").doc("menuImage").set({ url })
                 .then(() => {
                     console.log("Menu image URL saved.");
                 }).catch((error) => {
@@ -319,7 +319,8 @@
         });
 
         document.getElementById('clearButton').addEventListener('click', function() {
-            if (confirm('確定要刪除所有訂單資訊嗎？')) {
+            const password = prompt('請輸入密碼以清除資料:');
+            if (password === '0841') {
                 db.collection("orders").get().then((querySnapshot) => {
                     const batch = db.batch();
                     querySnapshot.forEach((doc) => {
@@ -332,6 +333,8 @@
                 }).catch((error) => {
                     console.error("Error deleting orders: ", error);
                 });
+            } else {
+                alert('密碼錯誤，無法清除資料。');
             }
         });
 
