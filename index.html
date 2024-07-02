@@ -339,14 +339,19 @@
         });
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
-            const imageUrl = prompt('請輸入圖片URL:');
-            if (imageUrl) {
-                const menuImage = document.getElementById('menuImage');
-                menuImage.src = imageUrl;
-                menuImage.onclick = function() {
-                    window.open(imageUrl, '_blank');
+            const password = prompt('請輸入密碼以更換圖片:');
+            if (password === '0841') {
+                const imageUrl = prompt('請輸入圖片URL:');
+                if (imageUrl) {
+                    const menuImage = document.getElementById('menuImage');
+                    menuImage.src = imageUrl;
+                    menuImage.onclick = function() {
+                        window.open(imageUrl, '_blank');
+                    }
+                    saveMenuImage(imageUrl);
                 }
-                saveMenuImage(imageUrl);
+            } else {
+                alert('密碼錯誤，無法更換圖片。');
             }
         });
 
