@@ -6,129 +6,7 @@
     <title>設計分室午餐點餐系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #4a90e2;
-            --secondary-color: #f39c12;
-            --background-color: #f5f7fa;
-            --text-color: #333333;
-            --border-color: #e0e0e0;
-        }
-        body { 
-            font-family: 'Noto Sans TC', sans-serif;
-            line-height: 1.6; 
-            margin: 0; 
-            padding: 0; 
-            background-color: var(--background-color);
-            color: var(--text-color);
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        h1 { 
-            color: var(--primary-color);
-            font-size: 2.5em;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .content-wrapper {
-            display: flex;
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-        .form-section, .menu-section {
-            flex: 1;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-        }
-        input, textarea, button {
-            margin-bottom: 15px;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #3a7bc8;
-        }
-        .menu-image img {
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-        h2 {
-            color: var(--primary-color);
-            margin-top: 0;
-        }
-        #datetime {
-            text-align: center;
-            font-size: 1.2em;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background-color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        th {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
-        #totalPrice {
-            text-align: right;
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-top: 20px;
-            color: var(--primary-color);
-        }
-        #exportButton, #clearButton {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-            margin-right: 10px;
-        }
-        #exportButton:hover, #clearButton:hover {
-            background-color: #e67e22;
-        }
-        .button-group {
-            display: flex;
-            justify-content: flex-start;
-        }
+        /* 你的 CSS 樣式 */
     </style>
 </head>
 <body>
@@ -149,10 +27,10 @@
             </div>
             <div class="menu-section">
                 <div class="menu-image">
-                    <img id="menuImage" src="/api/placeholder/600/400" alt="今日菜單" />
+                    <img id="menuImage" src="" alt="今日菜單" />
                 </div>
                 <button id="changeImageButton">更換圖片</button>
-                <input type="file" id="fileInput" style="display: none;" accept="image/*" />
+                <input type="file" id="fileInput" style="display: none;">
             </div>
         </div>
 
@@ -179,25 +57,22 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
     <script>
-        // Your web app's Firebase configuration
-        var firebaseConfig = {
-            apiKey: "AIzaSyAsn5KFM6wWpG7SBqCefpEdbgdWFSEud0",
-            authDomain: "lunch-order-2f467.firebaseapp.com",
-            databaseURL: "https://lunch-order-2f467-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "lunch-order-2f467",
-            storageBucket: "lunch-order-2f467.appspot.com",
-            messagingSenderId: "38416716299",
-            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
-            measurementId: "G-TL11E0E3V5"
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
-        var storage = firebase.storage();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
 
         function updateDateTime() {
             const now = new Date();
@@ -214,7 +89,6 @@
 
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
-                console.log("Order added to database");
                 loadOrdersFromDatabase();
             }).catch((error) => {
                 console.error("Error adding order: ", error);
@@ -222,7 +96,7 @@
         }
 
         function loadOrdersFromDatabase() {
-            db.collection("orders").orderBy("timestamp", "asc").get().then((querySnapshot) => {
+            db.collection("orders").get().then((querySnapshot) => {
                 const orders = [];
                 querySnapshot.forEach((doc) => {
                     orders.push(doc.data());
@@ -305,7 +179,7 @@
         });
 
         document.getElementById('clearButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼:');
+            const password = prompt('請輸入密碼以清除資料：');
             if (password === '0841') {
                 db.collection("orders").get().then((querySnapshot) => {
                     querySnapshot.forEach((doc) => {
@@ -314,63 +188,47 @@
                     loadOrdersFromDatabase();
                 });
             } else {
-                alert('密碼錯誤');
+                alert('密碼錯誤，無法清除資料。');
             }
         });
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼:');
+            const password = prompt('請輸入密碼以更換圖片：');
             if (password === '0841') {
                 document.getElementById('fileInput').click();
             } else {
-                alert('密碼錯誤');
+                alert('密碼錯誤，無法更換圖片。');
             }
         });
 
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
             if (file) {
-                const storageRef = storage.ref('menuImages/' + file.name);
-                storageRef.put(file).then(() => {
-                    storageRef.getDownloadURL().then((url) => {
-                        console.log('Image URL:', url);
-                        const menuImage = document.getElementById('menuImage');
-                        menuImage.src = url;
-                        menuImage.onclick = function() {
-                            window.open(url, '_blank');
-                        };
-                        db.collection('settings').doc('menuImage').set({ url }).then(() => {
-                            console.log('Image URL saved to Firestore');
-                        }).catch((error) => {
-                            console.error('Error saving image URL to Firestore:', error);
+                const storageRef = storage.ref('menu/' + file.name);
+                storageRef.put(file).then((snapshot) => {
+                    snapshot.ref.getDownloadURL().then((url) => {
+                        db.collection("images").doc("menuImage").set({ url: url }).then(() => {
+                            document.getElementById('menuImage').src = url;
                         });
-                    }).catch((error) => {
-                        console.error('Error getting image URL:', error);
                     });
-                }).catch((error) => {
-                    console.error('Error uploading image:', error);
                 });
             }
         });
 
-        window.onload = function() {
-            db.collection('settings').doc('menuImage').get().then((doc) => {
+        function loadMenuImage() {
+            db.collection("images").doc("menuImage").get().then((doc) => {
                 if (doc.exists) {
-                    const url = doc.data().url;
-                    console.log('Loaded image URL:', url);
-                    const menuImage = document.getElementById('menuImage');
-                    menuImage.src = url;
-                    menuImage.onclick = function() {
-                        window.open(url, '_blank');
-                    };
+                    document.getElementById('menuImage').src = doc.data().url;
                 }
-            }).catch((error) => {
-                console.error('Error loading image URL from Firestore:', error);
             });
-            loadOrdersFromDatabase();
-        };
+        }
 
+        // 初始化
         updateDateTime();
+        loadOrdersFromDatabase();
+        loadMenuImage();
+
+        // 每分鐘更新日期時間
         setInterval(updateDateTime, 60000);
     </script>
 </body>
