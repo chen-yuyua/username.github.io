@@ -6,7 +6,129 @@
     <title>設計分室午餐點餐系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* 你的 CSS 樣式 */
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f39c12;
+            --background-color: #f5f7fa;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
+        body { 
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6; 
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { 
+            color: var(--primary-color);
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .content-wrapper {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .form-section, .menu-section {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        input, textarea, button {
+            margin-bottom: 15px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3a7bc8;
+        }
+        .menu-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+        #datetime {
+            text-align: center;
+            font-size: 1.2em;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        #totalPrice {
+            text-align: right;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: var(--primary-color);
+        }
+        #exportButton, #clearButton {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+            margin-right: 10px;
+        }
+        #exportButton:hover, #clearButton:hover {
+            background-color: #e67e22;
+        }
+        .button-group {
+            display: flex;
+            justify-content: flex-start;
+        }
     </style>
 </head>
 <body>
@@ -63,12 +185,12 @@
     <script>
         // Firebase 配置
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
+            authDomain: "lunch-order-2f467.firebaseapp.com",
+            projectId: "lunch-order-2f467",
+            storageBucket: "lunch-order-2f467.appspot.com",
+            messagingSenderId: "38416716299",
+            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -135,6 +257,27 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
+        function clearOrders() {
+            if (confirm('確定要刪除所有訂單資訊嗎？')) {
+                const password = prompt('請輸入密碼以刪除所有訂單：');
+                if (password === '0841') {
+                    db.collection("orders").get().then((querySnapshot) => {
+                        const batch = db.batch();
+                        querySnapshot.forEach((doc) => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
+                    }).then(() => {
+                        loadOrdersFromDatabase();
+                    }).catch((error) => {
+                        console.error("Error clearing orders: ", error);
+                    });
+                } else {
+                    alert('密碼錯誤，無法清除資料。');
+                }
+            }
+        }
+
         document.getElementById('orderForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const name = this.elements['name'].value;
@@ -142,8 +285,7 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            const order = { name, meal, price, note, timestamp };
-            addOrderToDatabase(order);
+            addOrderToDatabase({ name, meal, price, note, timestamp });
             this.reset();
         });
 
@@ -178,19 +320,7 @@
             }
         });
 
-        document.getElementById('clearButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼以清除資料：');
-            if (password === '0841') {
-                db.collection("orders").get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        doc.ref.delete();
-                    });
-                    loadOrdersFromDatabase();
-                });
-            } else {
-                alert('密碼錯誤，無法清除資料。');
-            }
-        });
+        document.getElementById('clearButton').addEventListener('click', clearOrders);
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
             const password = prompt('請輸入密碼以更換圖片：');
