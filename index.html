@@ -227,19 +227,20 @@
                 querySnapshot.forEach((doc) => {
                     orders.push(doc.data());
                 });
-                displayOrders(orders);
+                updateOrderTable(orders);
             }).catch((error) => {
-                console.error("Error loading orders: ", error);
+                console.error("Error getting orders: ", error);
             });
         }
 
-        function displayOrders(orders) {
+        function updateOrderTable(orders) {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             tbody.innerHTML = '';
             let totalPrice = 0;
             orders.forEach((order, index) => {
                 const row = tbody.insertRow();
-                const dateTimeString = new Date(order.timestamp).toLocaleString('zh-TW', { 
+                const orderDate = new Date(order.timestamp);
+                const dateTimeString = orderDate.toLocaleString('zh-TW', { 
                     year: 'numeric', 
                     month: '2-digit', 
                     day: '2-digit', 
@@ -332,13 +333,22 @@
                 const storageRef = storage.ref('menuImages/' + file.name);
                 storageRef.put(file).then(() => {
                     storageRef.getDownloadURL().then((url) => {
+                        console.log('Image URL:', url);
                         const menuImage = document.getElementById('menuImage');
                         menuImage.src = url;
                         menuImage.onclick = function() {
                             window.open(url, '_blank');
                         };
-                        db.collection('settings').doc('menuImage').set({ url });
+                        db.collection('settings').doc('menuImage').set({ url }).then(() => {
+                            console.log('Image URL saved to Firestore');
+                        }).catch((error) => {
+                            console.error('Error saving image URL to Firestore:', error);
+                        });
+                    }).catch((error) => {
+                        console.error('Error getting image URL:', error);
                     });
+                }).catch((error) => {
+                    console.error('Error uploading image:', error);
                 });
             }
         });
@@ -347,12 +357,15 @@
             db.collection('settings').doc('menuImage').get().then((doc) => {
                 if (doc.exists) {
                     const url = doc.data().url;
+                    console.log('Loaded image URL:', url);
                     const menuImage = document.getElementById('menuImage');
                     menuImage.src = url;
                     menuImage.onclick = function() {
                         window.open(url, '_blank');
                     };
                 }
+            }).catch((error) => {
+                console.error('Error loading image URL from Firestore:', error);
             });
             loadOrdersFromDatabase();
         };
