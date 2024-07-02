@@ -67,7 +67,6 @@
         }
         .menu-image img {
             width: 100%;
-            height: auto;
             border-radius: 8px;
             margin-bottom: 20px;
             cursor: pointer;
@@ -149,7 +148,7 @@
             </div>
             <div class="menu-section">
                 <div class="menu-image">
-                    <img id="menuImage" src="" alt="今日菜單" />
+                    <img id="menuImage" src="/api/placeholder/600/400" alt="今日菜單" />
                 </div>
                 <button id="changeImageButton">更換圖片</button>
             </div>
@@ -163,6 +162,7 @@
                     <th>姓名</th>
                     <th>餐點</th>
                     <th>價格</th>
+                    <th>訂購時間</th>
                     <th>備註</th>
                 </tr>
             </thead>
@@ -180,9 +180,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsn5XFMWowGp7SBeyCqfeEpbdg0wfSEud0",
+        // Your web app's Firebase configuration
+        var firebaseConfig = {
+            apiKey: "AIzaSyAsn5KFM6wWpG7SBqCefpEdbgdWFSEud0",
             authDomain: "lunch-order-2f467.firebaseapp.com",
             databaseURL: "https://lunch-order-2f467-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "lunch-order-2f467",
@@ -191,11 +191,9 @@
             appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
             measurementId: "G-TL11E0E3V5"
         };
+        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        let totalPrice = 0;
-        let orderCount = 0;
+        var db = firebase.firestore();
 
         function updateDateTime() {
             const now = new Date();
@@ -212,7 +210,7 @@
 
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
-                console.log("Order added to database.");
+                console.log("Order added to database");
                 loadOrdersFromDatabase();
             }).catch((error) => {
                 console.error("Error adding order: ", error);
@@ -220,7 +218,7 @@
         }
 
         function loadOrdersFromDatabase() {
-            db.collection("orders").orderBy("timestamp").get().then((querySnapshot) => {
+            db.collection("orders").orderBy("timestamp", "asc").get().then((querySnapshot) => {
                 const orders = [];
                 querySnapshot.forEach((doc) => {
                     orders.push(doc.data());
@@ -234,44 +232,28 @@
         function displayOrders(orders) {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             tbody.innerHTML = '';
-            totalPrice = 0;
+            let totalPrice = 0;
             orders.forEach((order, index) => {
                 const row = tbody.insertRow();
+                const dateTimeString = new Date(order.timestamp).toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${order.name}</td>
                     <td>${order.meal}</td>
                     <td>$${order.price.toFixed(2)}</td>
+                    <td>${dateTimeString}</td>
                     <td>${order.note}</td>
                 `;
                 totalPrice += order.price;
             });
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
-        }
-
-        function saveMenuImage(url) {
-            db.collection("settings").doc("menuImage").set({ url })
-                .then(() => {
-                    console.log("Menu image URL saved.");
-                }).catch((error) => {
-                    console.error("Error saving menu image URL: ", error);
-                });
-        }
-
-        function loadMenuImage() {
-            db.collection("settings").doc("menuImage").get()
-                .then((doc) => {
-                    if (doc.exists) {
-                        const url = doc.data().url;
-                        const menuImage = document.getElementById('menuImage');
-                        menuImage.src = url;
-                        menuImage.onclick = function() {
-                            window.open(url, '_blank');
-                        }
-                    }
-                }).catch((error) => {
-                    console.error("Error loading menu image URL: ", error);
-                });
         }
 
         document.getElementById('orderForm').addEventListener('submit', function(e) {
@@ -280,8 +262,7 @@
             const meal = this.elements['meal'].value;
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
-            const timestamp = new Date().getTime();
-
+            const timestamp = Date.now();
             const order = { name, meal, price, note, timestamp };
             addOrderToDatabase(order);
             this.reset();
@@ -303,7 +284,7 @@
             });
 
             // Add total price
-            csvContent += `"","","","",${document.getElementById('totalPrice').textContent}\n`;
+            csvContent += `"","","","","",${document.getElementById('totalPrice').textContent}\n`;
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
@@ -319,27 +300,21 @@
         });
 
         document.getElementById('clearButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼以清除資料:');
+            const password = prompt('請輸入密碼:');
             if (password === '0841') {
                 db.collection("orders").get().then((querySnapshot) => {
-                    const batch = db.batch();
                     querySnapshot.forEach((doc) => {
-                        batch.delete(doc.ref);
+                        doc.ref.delete();
                     });
-                    return batch.commit();
-                }).then(() => {
-                    console.log("All orders deleted.");
                     loadOrdersFromDatabase();
-                }).catch((error) => {
-                    console.error("Error deleting orders: ", error);
                 });
             } else {
-                alert('密碼錯誤，無法清除資料。');
+                alert('密碼錯誤');
             }
         });
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼以更換圖片:');
+            const password = prompt('請輸入密碼:');
             if (password === '0841') {
                 const imageUrl = prompt('請輸入圖片URL:');
                 if (imageUrl) {
@@ -347,20 +322,27 @@
                     menuImage.src = imageUrl;
                     menuImage.onclick = function() {
                         window.open(imageUrl, '_blank');
-                    }
-                    saveMenuImage(imageUrl);
+                    };
+                    localStorage.setItem('menuImageUrl', imageUrl);
                 }
             } else {
-                alert('密碼錯誤，無法更換圖片。');
+                alert('密碼錯誤');
             }
         });
 
-        // 初始化
-        updateDateTime();
-        loadOrdersFromDatabase();
-        loadMenuImage();
+        window.onload = function() {
+            const savedImageUrl = localStorage.getItem('menuImageUrl');
+            if (savedImageUrl) {
+                const menuImage = document.getElementById('menuImage');
+                menuImage.src = savedImageUrl;
+                menuImage.onclick = function() {
+                    window.open(savedImageUrl, '_blank');
+                };
+            }
+            loadOrdersFromDatabase();
+        };
 
-        // 每分鐘更新日期時間
+        updateDateTime();
         setInterval(updateDateTime, 60000);
     </script>
 </body>
