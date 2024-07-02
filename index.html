@@ -67,6 +67,7 @@
         }
         .menu-image img {
             width: 100%;
+            height: auto;
             border-radius: 8px;
             margin-bottom: 20px;
             cursor: pointer;
@@ -151,6 +152,7 @@
                     <img id="menuImage" src="/api/placeholder/600/400" alt="今日菜單" />
                 </div>
                 <button id="changeImageButton">更換圖片</button>
+                <input type="file" id="fileInput" style="display: none;" accept="image/*" />
             </div>
         </div>
 
@@ -179,6 +181,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script>
         // Your web app's Firebase configuration
         var firebaseConfig = {
@@ -194,6 +197,7 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         var db = firebase.firestore();
+        var storage = firebase.storage();
 
         function updateDateTime() {
             const now = new Date();
@@ -235,13 +239,13 @@
             let totalPrice = 0;
             orders.forEach((order, index) => {
                 const row = tbody.insertRow();
-                const dateTimeString = new Date(order.timestamp).toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
+                const dateTimeString = new Date(order.timestamp).toLocaleString('zh-TW', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: false 
                 });
                 row.innerHTML = `
                     <td>${index + 1}</td>
@@ -316,29 +320,40 @@
         document.getElementById('changeImageButton').addEventListener('click', function() {
             const password = prompt('請輸入密碼:');
             if (password === '0841') {
-                const imageUrl = prompt('請輸入圖片URL:');
-                if (imageUrl) {
-                    const menuImage = document.getElementById('menuImage');
-                    menuImage.src = imageUrl;
-                    menuImage.onclick = function() {
-                        window.open(imageUrl, '_blank');
-                    };
-                    localStorage.setItem('menuImageUrl', imageUrl);
-                }
+                document.getElementById('fileInput').click();
             } else {
                 alert('密碼錯誤');
             }
         });
 
-        window.onload = function() {
-            const savedImageUrl = localStorage.getItem('menuImageUrl');
-            if (savedImageUrl) {
-                const menuImage = document.getElementById('menuImage');
-                menuImage.src = savedImageUrl;
-                menuImage.onclick = function() {
-                    window.open(savedImageUrl, '_blank');
-                };
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const storageRef = storage.ref('menuImages/' + file.name);
+                storageRef.put(file).then(() => {
+                    storageRef.getDownloadURL().then((url) => {
+                        const menuImage = document.getElementById('menuImage');
+                        menuImage.src = url;
+                        menuImage.onclick = function() {
+                            window.open(url, '_blank');
+                        };
+                        db.collection('settings').doc('menuImage').set({ url });
+                    });
+                });
             }
+        });
+
+        window.onload = function() {
+            db.collection('settings').doc('menuImage').get().then((doc) => {
+                if (doc.exists) {
+                    const url = doc.data().url;
+                    const menuImage = document.getElementById('menuImage');
+                    menuImage.src = url;
+                    menuImage.onclick = function() {
+                        window.open(url, '_blank');
+                    };
+                }
+            });
             loadOrdersFromDatabase();
         };
 
