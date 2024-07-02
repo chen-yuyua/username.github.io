@@ -244,6 +244,30 @@
             });
         }
 
+        function saveMenuImage(url) {
+            db.collection("settings").doc("menuImage").set({ url: url })
+                .then(() => {
+                    console.log("Menu image URL saved.");
+                })
+                .catch((error) => {
+                    console.error("Error saving menu image URL: ", error);
+                });
+        }
+
+        function loadMenuImage() {
+            db.collection("settings").doc("menuImage").get().then((doc) => {
+                if (doc.exists) {
+                    const menuImage = document.getElementById('menuImage');
+                    menuImage.src = doc.data().url;
+                    menuImage.onclick = function() {
+                        window.open(doc.data().url, '_blank');
+                    }
+                }
+            }).catch((error) => {
+                console.error("Error loading menu image: ", error);
+            });
+        }
+
         document.getElementById('orderForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const name = this.elements['name'].value;
@@ -305,12 +329,14 @@
                 menuImage.onclick = function() {
                     window.open(imageUrl, '_blank');
                 }
+                saveMenuImage(imageUrl);
             }
         });
 
         // 初始化
         updateDateTime();
         loadOrdersFromDatabase();
+        loadMenuImage();
 
         // 每分鐘更新日期時間
         setInterval(updateDateTime, 60000);
