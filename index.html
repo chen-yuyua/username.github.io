@@ -71,7 +71,6 @@
             border-radius: 8px;
             margin-bottom: 20px;
             cursor: pointer;
-            object-fit: cover;
         }
         h2 {
             color: var(--primary-color);
@@ -150,7 +149,7 @@
             </div>
             <div class="menu-section">
                 <div class="menu-image">
-                    <img id="menuImage" src="https://tdd-lunch-order.netlify.app/api/placeholder/600/400" alt="今日菜單" />
+                    <img id="menuImage" src="" alt="今日菜單" />
                 </div>
                 <button id="changeImageButton">更換圖片</button>
             </div>
@@ -178,14 +177,12 @@
         </div>
     </div>
 
-    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
-    <!-- Add Firebase products that you want to use -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script>
-        // Your web app's Firebase configuration
-        var firebaseConfig = {
-            apiKey: "AIzaSyAsn5XFMWn6wGp7SBpqCeEp6dgbWFSEu4o",
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsn5XFMWowGp7SBeyCqfeEpbdg0wfSEud0",
             authDomain: "lunch-order-2f467.firebaseapp.com",
             databaseURL: "https://lunch-order-2f467-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "lunch-order-2f467",
@@ -194,11 +191,11 @@
             appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
             measurementId: "G-TL11E0E3V5"
         };
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        var db = firebase.firestore();
+        const db = firebase.firestore();
 
         let totalPrice = 0;
+        let orderCount = 0;
 
         function updateDateTime() {
             const now = new Date();
@@ -214,58 +211,67 @@
         }
 
         function addOrderToDatabase(order) {
-            db.collection("orders").add(order)
-                .then((docRef) => {
-                    console.log("Document written with ID: ", docRef.id);
-                })
-                .catch((error) => {
-                    console.error("Error adding document: ", error);
-                });
+            db.collection("orders").add(order).then(() => {
+                console.log("Order added to database.");
+                loadOrdersFromDatabase();
+            }).catch((error) => {
+                console.error("Error adding order: ", error);
+            });
         }
 
         function loadOrdersFromDatabase() {
-            db.collection("orders").onSnapshot((querySnapshot) => {
-                const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = '';
-                totalPrice = 0;
+            db.collection("orders").orderBy("timestamp").get().then((querySnapshot) => {
+                const orders = [];
                 querySnapshot.forEach((doc) => {
-                    const order = doc.data();
-                    const row = tbody.insertRow();
-                    row.innerHTML = `
-                        <td>${tbody.rows.length + 1}</td>
-                        <td>${order.name}</td>
-                        <td>${order.meal}</td>
-                        <td>$${order.price.toFixed(2)}</td>
-                        <td>${order.note}</td>
-                    `;
-                    totalPrice += order.price;
+                    orders.push(doc.data());
                 });
-                document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
+                displayOrders(orders);
+            }).catch((error) => {
+                console.error("Error loading orders: ", error);
             });
+        }
+
+        function displayOrders(orders) {
+            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
+            totalPrice = 0;
+            orders.forEach((order, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${order.name}</td>
+                    <td>${order.meal}</td>
+                    <td>$${order.price.toFixed(2)}</td>
+                    <td>${order.note}</td>
+                `;
+                totalPrice += order.price;
+            });
+            document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
         function saveMenuImage(url) {
             db.collection("settings").doc("menuImage").set({ url: url })
                 .then(() => {
                     console.log("Menu image URL saved.");
-                })
-                .catch((error) => {
+                }).catch((error) => {
                     console.error("Error saving menu image URL: ", error);
                 });
         }
 
         function loadMenuImage() {
-            db.collection("settings").doc("menuImage").get().then((doc) => {
-                if (doc.exists) {
-                    const menuImage = document.getElementById('menuImage');
-                    menuImage.src = doc.data().url;
-                    menuImage.onclick = function() {
-                        window.open(doc.data().url, '_blank');
+            db.collection("settings").doc("menuImage").get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const url = doc.data().url;
+                        const menuImage = document.getElementById('menuImage');
+                        menuImage.src = url;
+                        menuImage.onclick = function() {
+                            window.open(url, '_blank');
+                        }
                     }
-                }
-            }).catch((error) => {
-                console.error("Error loading menu image: ", error);
-            });
+                }).catch((error) => {
+                    console.error("Error loading menu image URL: ", error);
+                });
         }
 
         document.getElementById('orderForm').addEventListener('submit', function(e) {
@@ -274,8 +280,9 @@
             const meal = this.elements['meal'].value;
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
+            const timestamp = new Date().getTime();
 
-            const order = { name, meal, price, note };
+            const order = { name, meal, price, note, timestamp };
             addOrderToDatabase(order);
             this.reset();
         });
@@ -314,9 +321,16 @@
         document.getElementById('clearButton').addEventListener('click', function() {
             if (confirm('確定要刪除所有訂單資訊嗎？')) {
                 db.collection("orders").get().then((querySnapshot) => {
+                    const batch = db.batch();
                     querySnapshot.forEach((doc) => {
-                        doc.ref.delete();
+                        batch.delete(doc.ref);
                     });
+                    return batch.commit();
+                }).then(() => {
+                    console.log("All orders deleted.");
+                    loadOrdersFromDatabase();
+                }).catch((error) => {
+                    console.error("Error deleting orders: ", error);
                 });
             }
         });
