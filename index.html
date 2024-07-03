@@ -66,11 +66,11 @@
             background-color: #3a7bc8;
         }
         .menu-image img {
-            width: 400px;
+            width: 100%;
+            max-width: 400px;
             height: auto;
             border-radius: 8px;
             margin-bottom: 20px;
-            cursor: pointer;
         }
         h2 {
             color: var(--primary-color);
@@ -218,23 +218,30 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.2.9/firebase-storage.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
+
     <script>
+        // Firebase 配置
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID",
-            measurementId: "YOUR_MEASUREMENT_ID"
+            apiKey: "AIzaSyAs5nXFM0wWGp7SEbqCefpE0dgbWfSEu4o",
+            authDomain: "lunch-order-2f467.firebaseapp.com",
+            databaseURL: "https://lunch-order-2f467-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "lunch-order-2f467",
+            storageBucket: "lunch-order-2f467.appspot.com",
+            messagingSenderId: "38416716299",
+            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
+            measurementId: "G-TL11E0E3V5"
         };
+
+        // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const storage = firebase.storage();
+        const analytics = firebase.analytics();
 
         function updateDateTime() {
             const now = new Date();
@@ -250,23 +257,29 @@
         }
 
         function addOrderToDatabase(order) {
-            db.collection("orders").add(order).then(() => {
-                loadOrdersFromDatabase();
-            }).catch((error) => {
-                console.error("Error adding order: ", error);
-            });
+            return db.collection("orders").add(order)
+                .then(() => {
+                    console.log("Order added successfully");
+                    loadOrdersFromDatabase();
+                })
+                .catch((error) => {
+                    console.error("Error adding order: ", error);
+                });
         }
 
         function loadOrdersFromDatabase() {
-            db.collection("orders").orderBy("timestamp", "desc").get().then((querySnapshot) => {
-                const orders = [];
-                querySnapshot.forEach((doc) => {
-                    orders.push(doc.data());
+            return db.collection("orders").orderBy("timestamp", "desc").get()
+                .then((querySnapshot) => {
+                    const orders = [];
+                    querySnapshot.forEach((doc) => {
+                        orders.push(doc.data());
+                    });
+                    console.log("Orders loaded:", orders);
+                    displayOrders(orders);
+                })
+                .catch((error) => {
+                    console.error("Error loading orders: ", error);
                 });
-                displayOrders(orders);
-            }).catch((error) => {
-                console.error("Error loading orders: ", error);
-            });
         }
 
         function displayOrders(orders) {
@@ -298,11 +311,16 @@
 
         function clearOrders() {
             db.collection("orders").get().then((querySnapshot) => {
+                const batch = db.batch();
                 querySnapshot.forEach((doc) => {
-                    doc.ref.delete();
+                    batch.delete(doc.ref);
                 });
+                return batch.commit();
             }).then(() => {
+                console.log("All orders cleared");
                 loadOrdersFromDatabase();
+            }).catch((error) => {
+                console.error("Error clearing orders: ", error);
             });
         }
 
@@ -312,23 +330,19 @@
             
             const uploadTask = fileRef.put(file);
 
-            // 顯示上傳進度條
             document.getElementById('uploadProgress').style.display = 'block';
 
             uploadTask.on('state_changed', 
                 (snapshot) => {
-                    // 更新進度條
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                     document.getElementById('uploadProgressBar').style.width = progress + '%';
                     document.getElementById('uploadProgressBar').textContent = progress.toFixed(2) + '%';
                 }, 
                 (error) => {
-                    // 處理錯誤
                     console.error("Upload failed:", error);
                     document.getElementById('uploadProgress').style.display = 'none';
                 }, 
                 () => {
-                    // 上傳完成
                     uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
                         db.collection("settings").doc("menuImage").set({ url: downloadURL }).then(() => {
                             loadMenuImage();
@@ -337,6 +351,16 @@
                     });
                 }
             );
+        }
+
+        function loadMenuImage() {
+            db.collection("settings").doc("menuImage").get().then((doc) => {
+                if (doc.exists && doc.data().url) {
+                    document.getElementById('menuImage').src = doc.data().url;
+                }
+            }).catch((error) => {
+                console.error("Error loading menu image: ", error);
+            });
         }
 
         document.getElementById('orderForm').addEventListener('submit', function(e) {
@@ -362,7 +386,8 @@
             // Add rows
             const rows = table.querySelectorAll('tbody tr');
             rows.forEach(row => {
-                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
+                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace
+                                                                      const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
                 csvContent += rowData.join(',') + "\n";
             });
 
@@ -395,31 +420,19 @@
             }
         });
 
-        function loadMenuImage() {
-            db.collection("settings").doc("menuImage").get().then((doc) => {
-                if (doc.exists && doc.data().url) {
-                    document.getElementById('menuImage').src = doc.data().url;
-                }
-            }).catch((error) => {
-                console.error("Error loading menu image: ", error);
-            });
-        }
-
         document.getElementById('adminModeButton').addEventListener('click', function() {
             document.querySelector('.admin-buttons').style.display = 'flex';
             document.getElementById('adminModeButton').style.display = 'none';
             document.getElementById('userModeButton').style.display = 'inline';
-            document.getElementById('changeImageButton').style.display = 'inline'; // 顯示更換圖片按鈕
         });
 
         document.getElementById('userModeButton').addEventListener('click', function() {
             document.querySelector('.admin-buttons').style.display = 'none';
             document.getElementById('adminModeButton').style.display = 'inline';
             document.getElementById('userModeButton').style.display = 'none';
-            document.getElementById('changeImageButton').style.display = 'none'; // 隱藏更換圖片按鈕
         });
 
-        // 初始化
+        // 初始化函數
         function init() {
             updateDateTime();
             loadOrdersFromDatabase();
