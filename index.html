@@ -48,7 +48,7 @@
             display: flex;
             flex-direction: column;
         }
-        input, textarea, button {
+        input, textarea, button, select {
             margin-bottom: 15px;
             padding: 12px;
             border: 1px solid var(--border-color);
@@ -129,6 +129,14 @@
             display: flex;
             justify-content: flex-start;
         }
+        .menu-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        #menuSelect {
+            flex-grow: 1;
+        }
     </style>
 </head>
 <body>
@@ -151,7 +159,12 @@
                 <div class="menu-image">
                     <img id="menuImage" src="" alt="今日菜單" />
                 </div>
-                <button id="changeImageButton">更換圖片</button>
+                <div class="menu-controls">
+                    <button id="changeImageButton">更換圖片</button>
+                    <select id="menuSelect">
+                        <option value="">選擇菜單圖片</option>
+                    </select>
+                </div>
                 <input type="file" id="fileInput" style="display: none;">
             </div>
         </div>
@@ -278,6 +291,31 @@
             }
         }
 
+        function loadMenuImage() {
+            db.collection("images").doc("menuImage").get().then((doc) => {
+                if (doc.exists) {
+                    document.getElementById('menuImage').src = doc.data().url;
+                }
+            });
+        }
+
+        function loadMenuImages() {
+            const menuSelect = document.getElementById('menuSelect');
+            menuSelect.innerHTML = '<option value="">選擇菜單圖片</option>';
+
+            const storageRef = storage.ref('menu');
+            storageRef.listAll().then((res) => {
+                res.items.forEach((itemRef) => {
+                    const option = document.createElement('option');
+                    option.value = itemRef.name;
+                    option.textContent = itemRef.name;
+                    menuSelect.appendChild(option);
+                });
+            }).catch((error) => {
+                console.error("Error loading menu images: ", error);
+            });
+        }
+
         document.getElementById('orderForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const name = this.elements['name'].value;
@@ -339,27 +377,55 @@
                     snapshot.ref.getDownloadURL().then((url) => {
                         db.collection("images").doc("menuImage").set({ url: url }).then(() => {
                             document.getElementById('menuImage').src = url;
+                            loadMenuImages(); // 重新加載菜單圖片列表
                         });
                     });
                 });
             }
         });
 
-        function loadMenuImage() {
-            db.collection("images").doc("menuImage").get().then((doc) => {
-                if (doc.exists) {
-                    document.getElementById('menuImage').src = doc.data().url;
+        document.getElementById('menuSelect').addEventListener('change', function(e) {
+            const selectedImage = e.target.value;
+            if (selectedImage) {
+                <!DOCTYPE html>
+<html lang="zh-TW">
+<!-- ... (前面的 HTML 和 CSS 部分保持不變) ... -->
+
+<script>
+    // ... (前面的 JavaScript 部分保持不變) ...
+
+    document.getElementById('menuSelect').addEventListener('change', function(e) {
+        const selectedImage = e.target.value;
+        if (selectedImage) {
+            const password = prompt('請輸入密碼以更換圖片：');
+            if (password === '0841') {
+                if (confirm(`確定要將菜單圖片更改為 ${selectedImage} 嗎？`)) {
+                    const storageRef = storage.ref('menu/' + selectedImage);
+                    storageRef.getDownloadURL().then((url) => {
+                        db.collection("images").doc("menuImage").set({ url: url }).then(() => {
+                            document.getElementById('menuImage').src = url;
+                            alert('菜單圖片已更新');
+                        });
+                    }).catch((error) => {
+                        console.error("Error updating menu image: ", error);
+                        alert('更新菜單圖片時發生錯誤');
+                    });
                 }
-            });
+            } else {
+                alert('密碼錯誤，無法更換圖片。');
+            }
+            e.target.value = ''; // 重置選單
         }
+    });
 
-        // 初始化
-        updateDateTime();
-        loadOrdersFromDatabase();
-        loadMenuImage();
+    // 初始化
+    updateDateTime();
+    loadOrdersFromDatabase();
+    loadMenuImage();
+    loadMenuImages();
 
-        // 每分鐘更新日期時間
-        setInterval(updateDateTime, 60000);
-    </script>
+    // 每分鐘更新日期時間
+    setInterval(updateDateTime, 60000);
+</script>
 </body>
 </html>
