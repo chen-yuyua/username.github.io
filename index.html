@@ -85,6 +85,7 @@
             display: block;
             margin: 20px auto;
             background-color: var(--secondary-color);
+            margin-bottom: 10px; /* 10px距離 */
         }
         table {
             width: 100%;
@@ -223,7 +224,7 @@
         }
 
         function loadOrdersFromDatabase() {
-            db.collection("orders").orderBy("timestamp", "asc").get().then((querySnapshot) => {
+            db.collection("orders").orderBy("timestamp", "asc").onSnapshot((querySnapshot) => {
                 const orders = [];
                 querySnapshot.forEach((doc) => {
                     orders.push(doc.data());
