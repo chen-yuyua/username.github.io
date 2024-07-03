@@ -81,7 +81,7 @@
             color: var(--primary-color);
             margin-bottom: 20px;
         }
-        #adminModeButton {
+        #adminModeButton, #userModeButton {
             display: block;
             margin: 20px auto;
             background-color: var(--secondary-color);
@@ -114,7 +114,7 @@
             margin-top: 20px;
             color: var(--primary-color);
         }
-        #exportButton, #clearButton, #changeImageButton {
+        #exportButton, #clearButton, #changeImageButton, #userModeButton {
             background-color: var(--secondary-color);
             color: white;
             padding: 12px 20px;
@@ -127,7 +127,7 @@
             margin-right: 10px;
             display: none; /* 隱藏按鈕 */
         }
-        #exportButton:hover, #clearButton:hover, #changeImageButton:hover {
+        #exportButton:hover, #clearButton:hover, #changeImageButton:hover, #userModeButton:hover {
             background-color: #e67e22;
         }
         .button-group {
@@ -141,6 +141,7 @@
         <h1>設計分室午餐點餐系統</h1>
         <div id="datetime"></div>
         <button id="adminModeButton">管理者模式</button>
+        <button id="userModeButton">回到使用者模式</button>
         
         <div class="content-wrapper">
             <div class="form-section">
@@ -236,7 +237,6 @@
             tbody.innerHTML = '';
             let totalPrice = 0;
             orders.forEach((order, index) => {
-                const row = tbody.insertRow();
                 const dateTimeString = new Date(order.timestamp).toLocaleString('zh-TW', { 
                     year: 'numeric', 
                     month: '2-digit', 
@@ -245,6 +245,7 @@
                     minute: '2-digit', 
                     hour12: false 
                 });
+                const row = tbody.insertRow();
                 row.innerHTML = `
                     <td>${index + 1}</td>
                     <td>${order.name}</td>
@@ -276,9 +277,17 @@
                 document.getElementById('exportButton').style.display = "block";
                 document.getElementById('clearButton').style.display = "block";
                 document.getElementById('changeImageButton').style.display = "block";
+                document.getElementById('userModeButton').style.display = "block";
             } else {
                 alert("密碼錯誤");
             }
+        });
+
+        document.getElementById('userModeButton').addEventListener('click', function() {
+            document.getElementById('exportButton').style.display = "none";
+            document.getElementById('clearButton').style.display = "none";
+            document.getElementById('changeImageButton').style.display = "none";
+            document.getElementById('userModeButton').style.display = "none";
         });
 
         document.getElementById('clearButton').addEventListener('click', function() {
