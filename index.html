@@ -70,7 +70,6 @@
             height: auto;
             border-radius: 8px;
             margin-bottom: 20px;
-            cursor: pointer;
         }
         h2 {
             color: var(--primary-color);
@@ -81,6 +80,11 @@
             font-size: 1.2em;
             color: var(--primary-color);
             margin-bottom: 20px;
+        }
+        #adminModeButton {
+            display: block;
+            margin: 20px auto;
+            background-color: var(--secondary-color);
         }
         table {
             width: 100%;
@@ -110,7 +114,7 @@
             margin-top: 20px;
             color: var(--primary-color);
         }
-        #exportButton, #clearButton {
+        #exportButton, #clearButton, #changeImageButton {
             background-color: var(--secondary-color);
             color: white;
             padding: 12px 20px;
@@ -121,8 +125,9 @@
             transition: background-color 0.3s;
             margin-top: 20px;
             margin-right: 10px;
+            display: none; /* 隱藏按鈕 */
         }
-        #exportButton:hover, #clearButton:hover {
+        #exportButton:hover, #clearButton:hover, #changeImageButton:hover {
             background-color: #e67e22;
         }
         .button-group {
@@ -135,6 +140,7 @@
     <div class="container">
         <h1>設計分室午餐點餐系統</h1>
         <div id="datetime"></div>
+        <button id="adminModeButton">管理者模式</button>
         
         <div class="content-wrapper">
             <div class="form-section">
@@ -152,7 +158,7 @@
                     <img id="menuImage" src="" alt="今日菜單" />
                 </div>
                 <button id="changeImageButton">更換圖片</button>
-                <input type="file" id="fileInput" style="display: none;">
+                <input type="file" id="fileInput" style="display:none" accept="image/*" />
             </div>
         </div>
 
@@ -179,18 +185,18 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.1/firebase-storage.js"></script>
     <script>
-        // Firebase 配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
+        var firebaseConfig = {
+            apiKey: "AIzaSyAsn5XFM6WwpGp7SBp4yCefpEdgbdWFsEud",
             authDomain: "lunch-order-2f467.firebaseapp.com",
             projectId: "lunch-order-2f467",
             storageBucket: "lunch-order-2f467.appspot.com",
             messagingSenderId: "38416716299",
-            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e"
+            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e",
+            measurementId: "G-TL11E0E3V5"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -212,20 +218,16 @@
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
                 loadOrdersFromDatabase();
-            }).catch((error) => {
-                console.error("Error adding order: ", error);
             });
         }
 
         function loadOrdersFromDatabase() {
-            db.collection("orders").get().then((querySnapshot) => {
+            db.collection("orders").orderBy("timestamp", "asc").get().then((querySnapshot) => {
                 const orders = [];
                 querySnapshot.forEach((doc) => {
                     orders.push(doc.data());
                 });
                 updateOrderTable(orders);
-            }).catch((error) => {
-                console.error("Error getting orders: ", error);
             });
         }
 
@@ -235,8 +237,7 @@
             let totalPrice = 0;
             orders.forEach((order, index) => {
                 const row = tbody.insertRow();
-                const orderDate = new Date(order.timestamp);
-                const dateTimeString = orderDate.toLocaleString('zh-TW', { 
+                const dateTimeString = new Date(order.timestamp).toLocaleString('zh-TW', { 
                     year: 'numeric', 
                     month: '2-digit', 
                     day: '2-digit', 
@@ -257,87 +258,59 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        function clearOrders() {
-            if (confirm('確定要刪除所有訂單資訊嗎？')) {
-                const password = prompt('請輸入密碼以刪除所有訂單：');
-                if (password === '0841') {
-                    db.collection("orders").get().then((querySnapshot) => {
-                        const batch = db.batch();
-                        querySnapshot.forEach((doc) => {
-                            batch.delete(doc.ref);
-                        });
-                        return batch.commit();
-                    }).then(() => {
-                        loadOrdersFromDatabase();
-                    }).catch((error) => {
-                        console.error("Error clearing orders: ", error);
-                    });
-                } else {
-                    alert('密碼錯誤，無法清除資料。');
-                }
-            }
-        }
-
         document.getElementById('orderForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const name = this.elements['name'].value;
             const meal = this.elements['meal'].value;
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
-            const timestamp = Date.now();
-            addOrderToDatabase({ name, meal, price, note, timestamp });
+            const timestamp = new Date().toISOString();
+            const order = { name, meal, price, note, timestamp };
+            addOrderToDatabase(order);
             this.reset();
         });
 
-        document.getElementById('exportButton').addEventListener('click', function() {
-            const table = document.getElementById('orderTable');
-            let csvContent = "\uFEFF"; // BOM for UTF-8
-
-            // Add headers
-            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
-            csvContent += headers.join(',') + "\n";
-
-            // Add rows
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
-                csvContent += rowData.join(',') + "\n";
-            });
-
-            // Add total price
-            csvContent += `"","","","","",${document.getElementById('totalPrice').textContent}\n`;
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `lunch_orders_${new Date().toISOString().slice(0,10)}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+        document.getElementById('adminModeButton').addEventListener('click', function() {
+            const password = prompt("請輸入管理者密碼:");
+            if (password === "0841") {
+                document.getElementById('exportButton').style.display = "block";
+                document.getElementById('clearButton').style.display = "block";
+                document.getElementById('changeImageButton').style.display = "block";
+            } else {
+                alert("密碼錯誤");
             }
         });
 
-        document.getElementById('clearButton').addEventListener('click', clearOrders);
+        document.getElementById('clearButton').addEventListener('click', function() {
+            const password = prompt("請輸入管理者密碼:");
+            if (password === "0841") {
+                db.collection("orders").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        doc.ref.delete();
+                    });
+                    loadOrdersFromDatabase();
+                });
+            } else {
+                alert("密碼錯誤");
+            }
+        });
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼以更換圖片：');
-            if (password === '0841') {
+            const password = prompt("請輸入管理者密碼:");
+            if (password === "0841") {
                 document.getElementById('fileInput').click();
             } else {
-                alert('密碼錯誤，無法更換圖片。');
+                alert("密碼錯誤");
             }
         });
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                const storageRef = storage.ref('menu/' + file.name);
+                const storageRef = storage.ref('images/' + file.name);
                 storageRef.put(file).then((snapshot) => {
                     snapshot.ref.getDownloadURL().then((url) => {
-                        db.collection("images").doc("menuImage").set({ url: url }).then(() => {
+                        db.collection("settings").doc("menuImage").set({ url }).then(() => {
                             document.getElementById('menuImage').src = url;
                         });
                     });
@@ -346,19 +319,16 @@
         });
 
         function loadMenuImage() {
-            db.collection("images").doc("menuImage").get().then((doc) => {
+            db.collection("settings").doc("menuImage").get().then((doc) => {
                 if (doc.exists) {
                     document.getElementById('menuImage').src = doc.data().url;
                 }
             });
         }
 
-        // 初始化
         updateDateTime();
         loadOrdersFromDatabase();
         loadMenuImage();
-
-        // 每分鐘更新日期時間
         setInterval(updateDateTime, 60000);
     </script>
 </body>
