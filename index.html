@@ -132,6 +132,21 @@
         .admin-buttons {
             display: none;
         }
+        #adminModeButton, #userModeButton {
+            background-color: pink;
+            color: black;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+            margin-right: 10px;
+        }
+        #adminModeButton:hover, #userModeButton:hover {
+            background-color: #ff9999;
+        }
     </style>
 </head>
 <body>
@@ -156,8 +171,6 @@
                 <div class="menu-image">
                     <img id="menuImage" src="/api/placeholder/600/400" alt="今日菜單" />
                 </div>
-                <button id="changeImageButton">更換圖片</button>
-                <input type="file" id="fileInput" style="display:none;">
             </div>
         </div>
 
@@ -181,6 +194,8 @@
         <div class="button-group admin-buttons">
             <button id="exportButton">導出訂單為 Excel</button>
             <button id="clearButton">清除資訊</button>
+            <button id="changeImageButton">更換圖片</button>
+            <input type="file" id="fileInput" style="display:none;">
         </div>
     </div>
 
@@ -348,12 +363,14 @@
             document.querySelector('.admin-buttons').style.display = 'flex';
             document.getElementById('adminModeButton').style.display = 'none';
             document.getElementById('userModeButton').style.display = 'inline';
+            document.getElementById('changeImageButton').style.display = 'inline'; // 顯示更換圖片按鈕
         });
 
         document.getElementById('userModeButton').addEventListener('click', function() {
             document.querySelector('.admin-buttons').style.display = 'none';
             document.getElementById('adminModeButton').style.display = 'inline';
             document.getElementById('userModeButton').style.display = 'none';
+            document.getElementById('changeImageButton').style.display = 'none'; // 隱藏更換圖片按鈕
         });
 
         // 初始化
