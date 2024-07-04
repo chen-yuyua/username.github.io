@@ -274,6 +274,7 @@
                 querySnapshot.forEach((doc) => {
                     orders.push({ id: doc.id, ...doc.data() });
                 });
+                orders.sort((a, b) => b.timestamp - a.timestamp); // 按照時間排序，時間越新的在越上面
                 updateOrderTable(orders);
             }).catch((error) => {
                 console.error("Error getting orders: ", error);
