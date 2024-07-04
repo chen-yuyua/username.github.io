@@ -192,7 +192,7 @@
                 <div class="menu-image">
                     <img id="menuImage" src="" alt="今日菜單" />
                 </div>
-                <button id="changeImageButton">更換圖片</button>
+                <button id="changeImageButton">上傳菜單</button>
                 <select id="imageSelector">
                     <option value="">選擇圖片</option>
                 </select>
@@ -372,11 +372,11 @@
         document.getElementById('clearButton').addEventListener('click', clearOrders);
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
-            const password = prompt('請輸入密碼以更換圖片：');
+            const password = prompt('請輸入密碼以上傳圖片：');
             if (password === '0841') {
                 document.getElementById('fileInput').click();
             } else {
-                alert('密碼錯誤，無法更換圖片。');
+                alert('密碼錯誤，無法上傳圖片。');
             }
         });
 
@@ -417,17 +417,23 @@
         document.getElementById('imageSelector').addEventListener('change', function() {
             const imageName = this.value;
             if (imageName) {
-                const confirmChange = confirm(`確定要更換為圖片：${imageName} 嗎？`);
-                if (confirmChange) {
-                    const storageRef = storage.ref('menu/' + imageName);
-                    storageRef.getDownloadURL().then((url) => {
-                        db.collection("images").doc("menuImage").set({ url: url }).then(() => {
-                            document.getElementById('menuImage').src = url;
+                const password = prompt('請輸入密碼以更換圖片：');
+                if (password === '0841') {
+                    const confirmChange = confirm(`確定要更換為圖片：${imageName} 嗎？`);
+                    if (confirmChange) {
+                        const storageRef = storage.ref('menu/' + imageName);
+                        storageRef.getDownloadURL().then((url) => {
+                            db.collection("images").doc("menuImage").set({ url: url }).then(() => {
+                                document.getElementById('menuImage').src = url;
+                            });
+                        }).catch((error) => {
+                            console.error("Error getting image URL: ", error);
                         });
-                    }).catch((error) => {
-                        console.error("Error getting image URL: ", error);
-                    });
+                    } else {
+                        this.value = '';
+                    }
                 } else {
+                    alert('密碼錯誤，無法更換圖片。');
                     this.value = '';
                 }
             }
