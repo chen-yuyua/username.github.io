@@ -110,7 +110,7 @@
             margin-top: 20px;
             color: var(--primary-color);
         }
-        #exportButton, #clearButton {
+        #exportButton, #clearButton, #deleteSelectedButton {
             background-color: var(--secondary-color);
             color: white;
             padding: 12px 20px;
@@ -122,7 +122,7 @@
             margin-top: 20px;
             margin-right: 10px;
         }
-        #exportButton:hover, #clearButton:hover {
+        #exportButton:hover, #clearButton:hover, #deleteSelectedButton:hover {
             background-color: #e67e22;
         }
         .button-group {
@@ -220,6 +220,7 @@
         <div class="button-group">
             <button id="exportButton">導出訂單為 Excel</button>
             <button id="clearButton">清除資訊</button>
+            <button id="deleteSelectedButton">消除單筆資訊</button>
         </div>
     </div>
 
@@ -270,7 +271,7 @@
             db.collection("orders").get().then((querySnapshot) => {
                 const orders = [];
                 querySnapshot.forEach((doc) => {
-                    orders.push(doc.data());
+                    orders.push({ id: doc.id, ...doc.data() });
                 });
                 updateOrderTable(orders);
             }).catch((error) => {
@@ -294,6 +295,7 @@
                     hour12: false 
                 });
                 row.innerHTML = `
+                    <td><input type="checkbox" data-id="${order.id}"></td>
                     <td>${index + 1}</td>
                     <td>${order.name}</td>
                     <td>${order.meal}</td>
@@ -306,23 +308,30 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        function clearOrders() {
-            if (confirm('確定要刪除所有訂單資訊嗎？')) {
-                const password = prompt('請輸入密碼以刪除所有訂單：');
+        function deleteSelectedOrders() {
+            const checkboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]:checked');
+            const ids = Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-id'));
+
+            if (ids.length === 0) {
+                alert('請選擇要刪除的訂單。');
+                return;
+            }
+
+            if (confirm('確定要刪除選中的訂單嗎？')) {
+                const password = prompt('請輸入密碼以刪除選中的訂單：');
                 if (password === '0841') {
-                    db.collection("orders").get().then((querySnapshot) => {
-                        const batch = db.batch();
-                        querySnapshot.forEach((doc) => {
-                            batch.delete(doc.ref);
-                        });
-                        return batch.commit();
-                    }).then(() => {
+                    const batch = db.batch();
+                    ids.forEach(id => {
+                        const docRef = db.collection("orders").doc(id);
+                        batch.delete(docRef);
+                    });
+                    batch.commit().then(() => {
                         loadOrdersFromDatabase();
                     }).catch((error) => {
-                        console.error("Error clearing orders: ", error);
+                        console.error("Error deleting orders: ", error);
                     });
                 } else {
-                    alert('密碼錯誤，無法清除資料。');
+                    alert('密碼錯誤，無法刪除資料。');
                 }
             }
         }
@@ -370,6 +379,7 @@
         });
 
         document.getElementById('clearButton').addEventListener('click', clearOrders);
+        document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
             const password = prompt('請輸入密碼以上傳圖片：');
