@@ -204,6 +204,7 @@
         <table id="orderTable">
             <thead>
                 <tr>
+                    <th></th>
                     <th>No.</th>
                     <th>姓名</th>
                     <th>餐點</th>
@@ -378,7 +379,26 @@
             }
         });
 
-        document.getElementById('clearButton').addEventListener('click', clearOrders);
+        document.getElementById('clearButton').addEventListener('click', function() {
+            if (confirm('確定要刪除所有訂單資訊嗎？')) {
+                const password = prompt('請輸入密碼以刪除所有訂單：');
+                if (password === '0841') {
+                    db.collection("orders").get().then((querySnapshot) => {
+                        const batch = db.batch();
+                        querySnapshot.forEach((doc) => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
+                    }).then(() => {
+                        loadOrdersFromDatabase();
+                    }).catch((error) => {
+                        console.error("Error clearing orders: ", error);
+                    });
+                } else {
+                    alert('密碼錯誤，無法清除資料。');
+                }
+            }
+        });
         document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
@@ -417,7 +437,12 @@
                 const selector = document.getElementById('imageSelector');
                 selector.innerHTML = '<option value="">選擇圖片</option>';
                 result.items.forEach((imageRef) => {
-                    selector.innerHTML += `<option value="${imageRef.name}">${imageRef.name}</option>`;
+                    imageRef.getDownloadURL().then((url) => {
+                        const option = document.createElement('option');
+                        option.value = url;
+                        option.textContent = imageRef.name;
+                        selector.appendChild(option);
+                    });
                 });
             }).catch((error) => {
                 console.error("Error loading images: ", error);
@@ -425,19 +450,16 @@
         }
 
         document.getElementById('imageSelector').addEventListener('change', function() {
-            const imageName = this.value;
-            if (imageName) {
+            const imageUrl = this.value;
+            if (imageUrl) {
                 const password = prompt('請輸入密碼以更換圖片：');
                 if (password === '0841') {
-                    const confirmChange = confirm(`確定要更換為圖片：${imageName} 嗎？`);
+                    const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
                     if (confirmChange) {
-                        const storageRef = storage.ref('menu/' + imageName);
-                        storageRef.getDownloadURL().then((url) => {
-                            db.collection("images").doc("menuImage").set({ url: url }).then(() => {
-                                document.getElementById('menuImage').src = url;
-                            });
+                        db.collection("images").doc("menuImage").set({ url: imageUrl }).then(() => {
+                            document.getElementById('menuImage').src = imageUrl;
                         }).catch((error) => {
-                            console.error("Error getting image URL: ", error);
+                            console.error("Error updating image URL: ", error);
                         });
                     } else {
                         this.value = '';
