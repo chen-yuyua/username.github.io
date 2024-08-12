@@ -206,7 +206,7 @@
                 <tr>
                     <th></th>
                     <th>No.</th>
-                    <th>已繳費</th> <!-- 新增的表頭 -->
+                    <th>已繳費</th>
                     <th>姓名</th>
                     <th>餐點</th>
                     <th>價格</th>
@@ -303,7 +303,7 @@
                 row.innerHTML = `
                     <td><input type="checkbox" data-id="${order.id}"></td>
                     <td>${index + 1}</td>
-                    <td>${isPaid}</td> <!-- 新增的欄位 -->
+                    <td>${isPaid}</td>
                     <td>${order.name}</td>
                     <td>${order.meal}</td>
                     <td>$${order.price.toFixed(2)}</td>
@@ -422,6 +422,7 @@
                     snapshot.ref.getDownloadURL().then((url) => {
                         db.collection("images").doc("menuImage").set({ url: url }).then(() => {
                             document.getElementById('menuImage').src = url;
+                            loadImageSelector(); // 更新選擇器
                         });
                     });
                 });
@@ -479,7 +480,7 @@
         updateDateTime();
         loadOrdersFromDatabase();
         loadMenuImage();
-        loadImageSelector();
+        loadImageSelector(); // 加载图片选择器
 
         // 每分鐘更新日期時間
         setInterval(updateDateTime, 60000);
