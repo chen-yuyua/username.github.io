@@ -206,6 +206,7 @@
                 <tr>
                     <th></th>
                     <th>No.</th>
+                    <th>已繳費</th> <!-- 新增的表頭 -->
                     <th>姓名</th>
                     <th>餐點</th>
                     <th>價格</th>
@@ -296,9 +297,13 @@
                     minute: '2-digit', 
                     hour12: false 
                 });
+
+                const isPaid = order.isPaid ? '✅' : `<input type="checkbox" class="paymentCheckbox" data-id="${order.id}">`;
+
                 row.innerHTML = `
                     <td><input type="checkbox" data-id="${order.id}"></td>
                     <td>${index + 1}</td>
+                    <td>${isPaid}</td> <!-- 新增的欄位 -->
                     <td>${order.name}</td>
                     <td>${order.meal}</td>
                     <td>$${order.price.toFixed(2)}</td>
@@ -308,34 +313,31 @@
                 totalPrice += order.price;
             });
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
+
+            // 绑定支付确认事件
+            const paymentCheckboxes = document.querySelectorAll('.paymentCheckbox');
+            paymentCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        if (confirm('確認已經繳費？')) {
+                            const orderId = this.getAttribute('data-id');
+                            updatePaymentStatus(orderId);
+                            this.parentNode.innerHTML = '✅';
+                        } else {
+                            this.checked = false;
+                        }
+                    }
+                });
+            });
         }
 
-        function deleteSelectedOrders() {
-            const checkboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]:checked');
-            const ids = Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-id'));
-
-            if (ids.length === 0) {
-                alert('請選擇要刪除的訂單。');
-                return;
-            }
-
-            if (confirm('確定要刪除選中的訂單嗎？')) {
-                const password = prompt('請輸入密碼以刪除選中的訂單：');
-                if (password === '0841') {
-                    const batch = db.batch();
-                    ids.forEach(id => {
-                        const docRef = db.collection("orders").doc(id);
-                        batch.delete(docRef);
-                    });
-                    batch.commit().then(() => {
-                        loadOrdersFromDatabase();
-                    }).catch((error) => {
-                        console.error("Error deleting orders: ", error);
-                    });
-                } else {
-                    alert('密碼錯誤，無法刪除資料。');
-                }
-            }
+        function updatePaymentStatus(orderId) {
+            const orderRef = db.collection("orders").doc(orderId);
+            orderRef.update({ isPaid: true }).then(() => {
+                console.log("Payment status updated for order ID:", orderId);
+            }).catch((error) => {
+                console.error("Error updating payment status:", error);
+            });
         }
 
         document.getElementById('orderForm').addEventListener('submit', function(e) {
@@ -345,7 +347,7 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            addOrderToDatabase({ name, meal, price, note, timestamp });
+            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid: false });
             this.reset();
         });
 
@@ -400,6 +402,7 @@
                 }
             }
         });
+
         document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
 
         document.getElementById('changeImageButton').addEventListener('click', function() {
