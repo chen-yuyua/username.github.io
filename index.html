@@ -206,6 +206,7 @@
                 <tr>
                     <th></th>
                     <th>No.</th>
+                    <th>已繳費</th> <!-- 新增 -->
                     <th>姓名</th>
                     <th>餐點</th>
                     <th>價格</th>
@@ -299,6 +300,7 @@
                 row.innerHTML = `
                     <td><input type="checkbox" data-id="${order.id}"></td>
                     <td>${index + 1}</td>
+                    <td><input type="checkbox" class="paid-checkbox" data-id="${order.id}"></td> <!-- 新增 -->
                     <td>${order.name}</td>
                     <td>${order.meal}</td>
                     <td>$${order.price.toFixed(2)}</td>
@@ -402,6 +404,20 @@
         });
         document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
 
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.classList.contains('paid-checkbox')) {
+                const checkbox = e.target;
+                if (checkbox.checked) {
+                    const isConfirmed = confirm('是否確定已經繳費？');
+                    if (isConfirmed) {
+                        checkbox.checked = true;
+                    } else {
+                        checkbox.checked = false;
+                    }
+                }
+            }
+        });
+
         document.getElementById('changeImageButton').addEventListener('click', function() {
             const password = prompt('請輸入密碼以上傳圖片：');
             if (password === '0841') {
@@ -449,28 +465,6 @@
                 console.error("Error loading images: ", error);
             });
         }
-
-        document.getElementById('imageSelector').addEventListener('change', function() {
-            const imageUrl = this.value;
-            if (imageUrl) {
-                const password = prompt('請輸入密碼以更換圖片：');
-                if (password === '0841') {
-                    const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
-                    if (confirmChange) {
-                        db.collection("images").doc("menuImage").set({ url: imageUrl }).then(() => {
-                            document.getElementById('menuImage').src = imageUrl;
-                        }).catch((error) => {
-                            console.error("Error updating image URL: ", error);
-                        });
-                    } else {
-                        this.value = '';
-                    }
-                } else {
-                    alert('密碼錯誤，無法更換圖片。');
-                    this.value = '';
-                }
-            }
-        });
 
         // 初始化
         updateDateTime();
