@@ -367,6 +367,95 @@
             });
         }
 
+        // 導出訂單為 Excel
+        document.getElementById('exportButton').addEventListener('click', function () {
+            const table = document.getElementById('orderTable');
+            let csvContent = "\uFEFF"; // BOM for UTF-8
+
+            // Add headers
+            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
+            csvContent += headers.join(',') + "\n";
+
+            // Add rows
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
+                csvContent += rowData.join(',') + "\n";
+            });
+
+            // Add total price
+            csvContent += `"","","","","",${document.getElementById('totalPrice').textContent}\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `lunch_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        // 清除訂單
+        document.getElementById('clearButton').addEventListener('click', function () {
+            if (confirm('確定要刪除所有訂單資訊嗎？')) {
+                const password = prompt('請輸入密碼以刪除所有訂單：');
+                if (password === '0841') {
+                    db.collection("orders").get().then((querySnapshot) => {
+                        const batch = db.batch();
+                        querySnapshot.forEach((doc) => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
+                    }).then(() => {
+                        document.querySelector('#orderTable tbody').innerHTML = '';
+                        document.getElementById('totalPrice').textContent = '總價格: $0.00';
+                    }).catch((error) => {
+                        console.error("Error clearing orders: ", error);
+                    });
+                } else {
+                    alert('密碼錯誤，無法清除資料。');
+                }
+            }
+        });
+
+        // 刪除選中的單筆訂單
+        document.getElementById('deleteSelectedButton').addEventListener('click', function () {
+            const checkboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]:checked');
+            const ids = Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-id'));
+
+            if (ids.length === 0) {
+                alert('請選擇要刪除的訂單。');
+                return;
+            }
+
+            if (confirm('確定要刪除選中的訂單嗎？')) {
+                const password = prompt('請輸入密碼以刪除選中的訂單：');
+                if (password === '0841') {
+                    const batch = db.batch();
+                    ids.forEach(id => {
+                        const docRef = db.collection("orders").doc(id);
+                        batch.delete(docRef);
+                    });
+                    batch.commit().then(() => {
+                        ids.forEach(id => {
+                            const row = document.querySelector(`#orderTable tbody input[data-id="${id}"]`).closest('tr');
+                            const price = parseFloat(row.cells[5].textContent.replace('$', ''));
+                            updateTotalPrice(-price);
+                            row.remove();
+                        });
+                    }).catch((error) => {
+                        console.error("Error deleting orders: ", error);
+                    });
+                } else {
+                    alert('密碼錯誤，無法刪除資料。');
+                }
+            }
+        });
+
         // 更換圖片
         document.getElementById('imageSelector').addEventListener('change', function () {
             const imageUrl = this.value;
