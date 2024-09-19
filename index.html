@@ -308,11 +308,49 @@
         // 新增訂單到資料庫
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
-                loadOrdersFromDatabase(); // 保證訂單顯示會更新
+                appendOrderToTable(order); // 只追加訂單到表格，不重載整個表格
                 document.getElementById('orderForm').reset(); // 清除表單數據
             }).catch((error) => {
                 console.error("Error adding order: ", error);
             });
+        }
+
+        // 追加訂單到表格
+        function appendOrderToTable(order) {
+            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+            const row = tbody.insertRow();
+            const orderDate = new Date(order.timestamp);
+            const dateTimeString = orderDate.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+
+            const index = tbody.rows.length + 1; // 獲取當前行數作為 No.
+            row.innerHTML = `
+                <td><input type="checkbox" data-id="${order.id}"></td>
+                <td>${index}</td>
+                <td><input type="checkbox" class="paid-checkbox" data-id="${order.id}" /></td>
+                <td>${order.name}</td>
+                <td>${order.meal}</td>
+                <td>$${order.price.toFixed(2)}</td>
+                <td>${dateTimeString}</td>
+                <td>${order.note}</td>
+            `;
+
+            // 更新總價格
+            updateTotalPrice(order.price);
+        }
+
+        // 更新總價格
+        function updateTotalPrice(newPrice) {
+            const totalPriceElement = document.getElementById('totalPrice');
+            let currentTotal = parseFloat(totalPriceElement.textContent.replace('總價格: $', '')) || 0;
+            currentTotal += newPrice;
+            totalPriceElement.textContent = `總價格: $${currentTotal.toFixed(2)}`;
         }
 
         // 載入訂單
@@ -323,42 +361,10 @@
                     orders.push({ id: doc.id, ...doc.data() });
                 });
                 orders.sort((a, b) => b.timestamp - a.timestamp); // 按時間排序
-                updateOrderTable(orders);
+                orders.forEach(order => appendOrderToTable(order)); // 將每個訂單追加到表格
             }).catch((error) => {
                 console.error("Error getting orders: ", error);
             });
-        }
-
-        // 更新訂單表格
-        function updateOrderTable(orders) {
-            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = '';
-            let totalPrice = 0;
-            orders.forEach((order, index) => {
-                const row = tbody.insertRow();
-                const orderDate = new Date(order.timestamp);
-                const dateTimeString = orderDate.toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-
-                row.innerHTML = `
-                    <td><input type="checkbox" data-id="${order.id}"></td>
-                    <td>${index + 1}</td>
-                    <td><input type="checkbox" class="paid-checkbox" data-id="${order.id}" /></td>
-                    <td>${order.name}</td>
-                    <td>${order.meal}</td>
-                    <td>$${order.price.toFixed(2)}</td>
-                    <td>${dateTimeString}</td>
-                    <td>${order.note}</td>
-                `;
-                totalPrice += order.price;
-            });
-            document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
         // 更換圖片
@@ -417,6 +423,17 @@
         loadMenuImage();
         loadImageSelector();
         setInterval(updateDateTime, 60000);
+
+        // 提交表單事件
+        document.getElementById('orderForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const name = this.elements['name'].value;
+            const meal = this.elements['meal'].value;
+            const price = parseFloat(this.elements['price'].value);
+            const note = this.elements['note'].value;
+            const timestamp = Date.now();
+            addOrderToDatabase({ name, meal, price, note, timestamp });
+        });
     </script>
 </body>
 
