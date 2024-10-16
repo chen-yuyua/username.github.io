@@ -473,7 +473,7 @@
         document.getElementById('imageSelector').addEventListener('change', function () {
             const imageUrl = this.value;
             if (imageUrl) {
-                const password = prompt('請輸入密碼以更換圖片：');
+                const password = prompt('請輸入密碼以更換��片：');
                 if (password === '0841') {
                     const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
                     if (confirmChange) {
@@ -582,7 +582,7 @@
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
 
-        function clearOrder(orderId) {
+        function deleteOrder(orderId) {
             // ... existing code ...
             const order = getOrderById(orderId);
             if (order.isPaid) {
