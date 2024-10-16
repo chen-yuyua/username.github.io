@@ -208,6 +208,19 @@
             text-decoration: none;
             cursor: pointer;
         }
+
+        .paid-status {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .red-circle {
+            color: red;
+        }
+
+        .blue-circle {
+            color: blue;
+        }
     </style>
 </head>
 
@@ -327,7 +340,7 @@
             row.innerHTML = `
                 <td><input type="checkbox" data-id="${order.id}" /></td>
                 <td>${index + 1}</td>
-                <td><input type="checkbox" class="paid-checkbox" data-id="${order.id}" ${order.isPaid ? 'checked' : ''} /></td>
+                <td><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}" data-id="${order.id}">${order.isPaid ? '●' : '●'}</span></td>
                 <td>${order.name}</td>
                 <td>${order.meal}</td>
                 <td>$${order.price.toFixed(2)}</td>
@@ -335,16 +348,21 @@
                 <td>${order.note}</td>
             `;
 
-            // 已繳費勾選事件
-            row.querySelector('.paid-checkbox').addEventListener('change', function (e) {
-                const isPaid = e.target.checked;
-                updatePaidStatus(order.id, isPaid);
+            // 已繳費狀態變更事件
+            row.querySelector('.paid-status').addEventListener('click', function (e) {
+                const orderId = e.target.getAttribute('data-id');
+                const isPaid = e.target.classList.contains('red-circle');
+                if (confirm('是否要變更為藍色圓形圖案？')) {
+                    updatePaidStatus(orderId, isPaid);
+                }
             });
         }
 
         // 更新已繳費狀態到 Firebase
         function updatePaidStatus(orderId, isPaid) {
-            db.collection("orders").doc(orderId).update({ isPaid: isPaid }).catch((error) => {
+            db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).then(() => {
+                loadOrdersFromDatabase();
+            }).catch((error) => {
                 console.error("Error updating paid status: ", error);
             });
         }
