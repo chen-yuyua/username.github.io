@@ -361,11 +361,7 @@
         // 更新已繳費狀態到 Firebase
         function updatePaidStatus(orderId, isPaid) {
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).then(() => {
-                const paidStatusElement = document.querySelector(`.paid-status[data-id="${orderId}"]`);
-                if (paidStatusElement) {
-                    paidStatusElement.classList.toggle('red-circle');
-                    paidStatusElement.classList.toggle('blue-circle');
-                }
+                loadOrdersFromDatabase(); // 重新載入訂單，確保所有使用者看到的資料一致
             }).catch((error) => {
                 console.error("Error updating paid status: ", error);
             });
