@@ -450,7 +450,7 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            const isPaid = document.querySelector('#orderTable .blue-circle') ? true : false;
+            const isPaid = false; // 將此行改為固定值 false
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
     </script>
