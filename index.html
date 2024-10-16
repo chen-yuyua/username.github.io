@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設計分室午餐點餐系統 Ver1.1</title>
+    <title>設計分室午餐點餐系統 Ver1.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -226,7 +226,7 @@
 
 <body>
     <div class="container">
-        <h1>設計分室午餐點餐系統 Ver1.1</h1>
+        <h1>設計分室午餐點餐系統 Ver1.2</h1>
         <div id="datetime"></div>
 
         <div class="content-wrapper">
@@ -361,7 +361,11 @@
         // 更新已繳費狀態到 Firebase
         function updatePaidStatus(orderId, isPaid) {
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).then(() => {
-                loadOrdersFromDatabase();
+                const paidStatusElement = document.querySelector(`.paid-status[data-id="${orderId}"]`);
+                if (paidStatusElement) {
+                    paidStatusElement.classList.toggle('red-circle');
+                    paidStatusElement.classList.toggle('blue-circle');
+                }
             }).catch((error) => {
                 console.error("Error updating paid status: ", error);
             });
