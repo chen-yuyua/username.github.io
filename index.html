@@ -335,8 +335,12 @@
 
         // 更新已繳費狀態到 Firebase
         function updatePaidStatus(orderId, isPaid) {
-            db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).catch((error) => {
-                console.error("Error updating paid status: ", error);
+            db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
+            .then(() => {
+                console.log("付款狀態已成功更新");
+            })
+            .catch((error) => {
+                console.error("更新付款狀態時出錯: ", error);
             });
         }
 
@@ -368,8 +372,8 @@
             // 已繳費狀態變更事件
             row.querySelector('.paid-status').addEventListener('click', function (e) {
                 const orderId = e.target.getAttribute('data-id');
-                const isPaid = e.target.classList.contains('red-circle');
-                if (confirm('是否要變更為藍色圓形圖案？')) {
+                const isPaid = e.target.classList.contains('blue-circle');
+                if (confirm('是否要變更付款狀態？')) {
                     updatePaidStatus(orderId, isPaid);
                 }
             });
