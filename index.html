@@ -316,7 +316,6 @@
         // 新增訂單到資料庫
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
-                loadOrdersFromDatabase(); // 更新訂單表格
                 document.getElementById('orderForm').reset(); // 清除表單數據
             }).catch((error) => {
                 console.error("Error adding order: ", error);
@@ -336,13 +335,7 @@
 
         // 更新已繳費狀態到 Firebase
         function updatePaidStatus(orderId, isPaid) {
-            db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).then(() => {
-                const paidStatusElement = document.querySelector(`.paid-status[data-id="${orderId}"]`);
-                if (paidStatusElement) {
-                    paidStatusElement.classList.toggle('red-circle');
-                    paidStatusElement.classList.toggle('blue-circle');
-                }
-            }).catch((error) => {
+            db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).catch((error) => {
                 console.error("Error updating paid status: ", error);
             });
         }
@@ -392,9 +385,42 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
+        // 更換圖片
+        function changeImage(event) {
+            const password = prompt('請輸入密碼以更換圖片：');
+            if (password === '0841') {
+                const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
+                if (confirmChange) {
+                    db.collection("images").doc("menuImage").set({ url: event.target.value }).then(() => {
+                        document.getElementById('menuImage').src = event.target.value;
+                    }).catch((error) => {
+                        console.error("Error updating image URL: ", error);
+                    });
+                } else {
+                    event.target.value = '';
+                }
+            } else {
+                alert('密碼錯誤，無法更換圖片。');
+                event.target.value = '';
+            }
+        }
+
+        document.getElementById('imageSelector').addEventListener('change', changeImage);
+
+        // 載入菜單圖片
+        function loadMenuImage() {
+            db.collection("images").doc("menuImage").get().then((doc) => {
+                if (doc.exists) {
+                    document.getElementById('menuImage').src = doc.data().url;
+                    document.getElementById('imageSelector').value = doc.data().url;
+                }
+            });
+        }
+
         // 初始化訂單數據
         updateDateTime();
         loadOrdersFromDatabase();
+        loadMenuImage();
         setInterval(updateDateTime, 60000);
 
         document.getElementById('orderForm').addEventListener('submit', function (e) {
@@ -404,7 +430,8 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid: false });
+            const isPaid = document.querySelector('#orderTable .blue-circle') ? true : false;
+            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
     </script>
 </body>
