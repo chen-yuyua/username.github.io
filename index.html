@@ -41,6 +41,7 @@
             display: flex;
             gap: 40px;
             margin-bottom: 40px;
+            flex-wrap: wrap;
         }
 
         .form-section,
@@ -79,7 +80,6 @@
             background-color: #3a7bc8;
         }
 
-        /* 圖片懸停效果 */
         .menu-image img {
             width: 100%;
             height: auto;
@@ -89,7 +89,6 @@
             transition: transform 0.3s ease-in-out;
         }
 
-        /* 當滑鼠移動到圖片上時，將圖片放大 1.6 倍 */
         .menu-image img:hover {
             transform: scale(1.6);
             z-index: 1000;
@@ -142,9 +141,7 @@
             color: var(--primary-color);
         }
 
-        #exportButton,
-        #clearButton,
-        #deleteSelectedButton {
+        .button-group button {
             background-color: var(--secondary-color);
             color: white;
             padding: 12px 20px;
@@ -157,9 +154,7 @@
             margin-right: 10px;
         }
 
-        #exportButton:hover,
-        #clearButton:hover,
-        #deleteSelectedButton:hover {
+        .button-group button:hover {
             background-color: #e67e22;
         }
 
@@ -345,9 +340,6 @@
                 const isPaid = e.target.checked;
                 updatePaidStatus(order.id, isPaid);
             });
-
-            // 更新總價格
-            updateTotalPrice();
         }
 
         // 更新已繳費狀態到 Firebase
@@ -360,77 +352,66 @@
         // 更新總價格
         function updateTotalPrice() {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-            let totalPrice = 0;
-            for (let i = 0; i < tbody.rows.length; i++) {
-                const priceCell = tbody.rows[i].cells[5];
-                const price = parseFloat(priceCell.textContent.replace('$', ''));
-                totalPrice += price;
-            }
+            let totalPrice = Array.from(tbody.rows).reduce((sum, row) => {
+                const price = parseFloat(row.cells[5].textContent.replace('$', ''));
+                return sum + price;
+            }, 0);
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
         // 載入訂單
         function loadOrdersFromDatabase() {
             db.collection("orders").get().then((querySnapshot) => {
-                const orders = [];
-                querySnapshot.forEach((doc) => {
-                    orders.push({ id: doc.id, ...doc.data() });
-                });
-                orders.sort((a, b) => b.timestamp - a.timestamp); // 按時間排序
+                const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
                 const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = ''; // 清除舊資料
                 orders.forEach((order, index) => appendOrderToTable(order, index));
+                updateTotalPrice();
             }).catch((error) => {
                 console.error("Error getting orders: ", error);
             });
         }
 
-        // 導出訂單為 Excel
-        document.getElementById('exportButton').addEventListener('click', function () {
+        // 將訂單導出為 Excel
+        function exportOrdersToCSV() {
             const table = document.getElementById('orderTable');
-            let csvContent = "\uFEFF"; // BOM for UTF-8
+            let csvContent = "﻿"; // BOM for UTF-8
 
-            // Add headers
-            const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent);
-            csvContent += headers.join(',') + "\n";
+            // 添加標題
+            csvContent += Array.from(table.querySelectorAll('th')).map(th => th.textContent).join(',') + "\n";
 
-            // Add rows
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const rowData = Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`);
-                csvContent += rowData.join(',') + "\n";
-            });
+            // 添加行
+            csvContent += Array.from(table.querySelectorAll('tbody tr')).map(row => {
+                return Array.from(row.cells).map(cell => `"${cell.textContent.replace(/"/g, '""')}"`).join(',');
+            }).join("\n");
 
-            // Add total price
-            csvContent += `"","","","","",${document.getElementById('totalPrice').textContent}\n`;
+            csvContent += `"","","","","",\${document.getElementById('totalPrice').textContent}\n`;
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            if (link.download !== undefined) {
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `lunch_orders_${new Date().toISOString().slice(0, 10)}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
-        });
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `lunch_orders_\${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.getElementById('exportButton').addEventListener('click', exportOrdersToCSV);
 
         // 清除訂單
-        document.getElementById('clearButton').addEventListener('click', function () {
+        function clearOrders() {
             if (confirm('確定要刪除所有訂單資訊嗎？')) {
                 const password = prompt('請輸入密碼以刪除所有訂單：');
                 if (password === '0841') {
                     db.collection("orders").get().then((querySnapshot) => {
                         const batch = db.batch();
-                        querySnapshot.forEach((doc) => {
-                            batch.delete(doc.ref);
-                        });
+                        querySnapshot.forEach((doc) => batch.delete(doc.ref));
                         return batch.commit();
                     }).then(() => {
                         document.querySelector('#orderTable tbody').innerHTML = '';
-                        document.getElementById('totalPrice').textContent = '總價格: $0.00';
+                        updateTotalPrice();
                     }).catch((error) => {
                         console.error("Error clearing orders: ", error);
                     });
@@ -438,10 +419,12 @@
                     alert('密碼錯誤，無法清除資料。');
                 }
             }
-        });
+        }
 
-        // 刪除選中的單筆訂單
-        document.getElementById('deleteSelectedButton').addEventListener('click', function () {
+        document.getElementById('clearButton').addEventListener('click', clearOrders);
+
+        // 刪除選中的單紙訂單
+        function deleteSelectedOrders() {
             const checkboxes = document.querySelectorAll('#orderTable tbody input[type="checkbox"]:checked');
             const ids = Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-id'));
 
@@ -458,48 +441,44 @@
                         const docRef = db.collection("orders").doc(id);
                         batch.delete(docRef);
                     });
-                    batch.commit().then(() => {
-                        loadOrdersFromDatabase(); // 重新載入訂單
-                    }).catch((error) => {
+                    batch.commit().then(loadOrdersFromDatabase).catch((error) => {
                         console.error("Error deleting orders: ", error);
                     });
                 } else {
                     alert('密碼錯誤，無法刪除資料。');
                 }
             }
-        });
+        }
+
+        document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
 
         // 更換圖片
-        document.getElementById('imageSelector').addEventListener('change', function () {
-            const imageUrl = this.value;
-            if (imageUrl) {
-                const password = prompt('請輸入密碼以更換圖片：');
-                if (password === '0841') {
-                    const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
-                    if (confirmChange) {
-                        db.collection("images").doc("menuImage").set({ url: imageUrl }).then(() => {
-                            document.getElementById('menuImage').src = imageUrl;
-                        }).catch((error) => {
-                            console.error("Error updating image URL: ", error);
-                        });
-                    } else {
-                        this.value = '';
-                    }
+        function changeImage(event) {
+            const password = prompt('請輸入密碼以更換圖片：');
+            if (password === '0841') {
+                const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
+                if (confirmChange) {
+                    db.collection("images").doc("menuImage").set({ url: event.target.value }).then(() => {
+                        document.getElementById('menuImage').src = event.target.value;
+                    }).catch((error) => {
+                        console.error("Error updating image URL: ", error);
+                    });
                 } else {
-                    alert('密碼錯誤，無法更換圖片。');
-                    this.value = '';
+                    event.target.value = '';
                 }
+            } else {
+                alert('密碼錯誤，無法更換圖片。');
+                event.target.value = '';
             }
-        });
+        }
 
-        // 上傳菜單功能：點擊上傳按鈕時觸發檔案選擇
-        document.getElementById('changeImageButton').addEventListener('click', function () {
-            document.getElementById('fileInput').click(); // 模擬點擊檔案選擇框
-        });
+        document.getElementById('imageSelector').addEventListener('change', changeImage);
 
-        // 當檔案被選擇時觸發上傳
+        // 上傳菜單功能
+        document.getElementById('changeImageButton').addEventListener('click', () => document.getElementById('fileInput').click());
+
         document.getElementById('fileInput').addEventListener('change', function (event) {
-            const file = event.target.files[0]; // 選擇的檔案
+            const file = event.target.files[0];
             if (file) {
                 const password = prompt('請輸入密碼以上傳圖片：');
                 if (password === '0841') {
@@ -510,7 +489,6 @@
 
                         uploadTask.on('state_changed',
                             function (snapshot) {
-                                // 可以加入進度條顯示上傳進度
                                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                                 console.log('Upload is ' + progress + '% done');
                             },
@@ -522,7 +500,7 @@
                                     db.collection('images').doc('menuImage').set({ url: downloadURL }).then(() => {
                                         document.getElementById('menuImage').src = downloadURL;
                                         alert('圖片上傳成功！');
-                                        loadImageSelector(); // 重新載入選擇器
+                                        loadImageSelector();
                                     });
                                 });
                             }
@@ -536,12 +514,11 @@
             }
         });
 
-        // 載入圖片
         function loadMenuImage() {
             db.collection("images").doc("menuImage").get().then((doc) => {
                 if (doc.exists) {
                     document.getElementById('menuImage').src = doc.data().url;
-                    document.getElementById('imageSelector').value = doc.data().url; // 預設選擇目前的圖片
+                    document.getElementById('imageSelector').value = doc.data().url;
                 }
             });
         }
@@ -563,14 +540,12 @@
             });
         }
 
-        // 初始化
         updateDateTime();
         loadOrdersFromDatabase();
         loadMenuImage();
         loadImageSelector();
         setInterval(updateDateTime, 60000);
 
-        // 提交表單事件
         document.getElementById('orderForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const name = this.elements['name'].value;
@@ -578,67 +553,8 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            const isPaid = false; // 新訂單預設為未繳費
-            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
+            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid: false });
         });
-
-        function deleteOrder(orderId) {
-            // ... existing code ...
-            const order = getOrderById(orderId);
-            if (order.isPaid) {
-                // 如果已缴费，直接返回，不删除
-                return;
-            }
-            // ... existing code to delete order ...
-        }
-
-        function submitOrder(order) {
-            // ... existing code ...
-            if (isDoubleClick()) {
-                // 防止双击提交导致的重复删除
-                return;
-            }
-            // ... existing code to add order to today's orders ...
-
-            // 设置已缴费状态为红色圆形图案
-            order.paidStatus = 'red-circle';
-            updateOrderDisplay(order);
-        }
-
-        function updateOrderDisplay(order) {
-            const orderElement = document.getElementById(`order-${order.id}`);
-            const paidStatusElement = orderElement.querySelector('.paid-status');
-
-            // 根据订单状态设置图案
-            if (order.paidStatus === 'red-circle') {
-                paidStatusElement.innerHTML = '🔴'; // 红色圆形图案
-            } else if (order.paidStatus === 'blue-circle') {
-                paidStatusElement.innerHTML = '🔵'; // 蓝色圆形图案
-            }
-
-            // 添加点击事件监听器
-            paidStatusElement.onclick = function() {
-                if (confirm('是否要变更为蓝色圆形图案？')) {
-                    order.paidStatus = 'blue-circle';
-                    updateOrderDisplay(order);
-                }
-            };
-        }
-
-        function exportToExcel(orders) {
-            // ... existing code ...
-            const processedOrders = orders.map(order => {
-                if (order.isPaid) {
-                    order.paidStatus = "◎"; // 将已缴费状态设置为 "◎"
-                } else {
-                    order.paidStatus = ""; // 未缴费状态为空
-                }
-                return order;
-            });
-
-            // 使用 processedOrders 进行 Excel 导出
-            // ... existing code to export processedOrders to Excel ...
-        }
     </script>
 </body>
 
