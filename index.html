@@ -415,6 +415,22 @@
                     document.getElementById('imageSelector').value = doc.data().url;
                 }
             });
+
+            // 加載下拉式選單中的圖片列表
+            storage.ref('menu').listAll().then((result) => {
+                const selector = document.getElementById('imageSelector');
+                selector.innerHTML = '<option value="">選擇圖片</option>';
+                result.items.forEach((imageRef) => {
+                    imageRef.getDownloadURL().then((url) => {
+                        const option = document.createElement('option');
+                        option.value = url;
+                        option.textContent = imageRef.name;
+                        selector.appendChild(option);
+                    });
+                });
+            }).catch((error) => {
+                console.error("Error loading images: ", error);
+            });
         }
 
         // 初始化訂單數據
