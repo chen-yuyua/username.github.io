@@ -473,7 +473,7 @@
         document.getElementById('imageSelector').addEventListener('change', function () {
             const imageUrl = this.value;
             if (imageUrl) {
-                const password = prompt('請輸入密碼以更換��片：');
+                const password = prompt('請輸入密碼以更換圖片：');
                 if (password === '0841') {
                     const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
                     if (confirmChange) {
@@ -599,6 +599,30 @@
                 return;
             }
             // ... existing code to add order to today's orders ...
+
+            // 设置已缴费状态为红色圆形图案
+            order.paidStatus = 'red-circle';
+            updateOrderDisplay(order);
+        }
+
+        function updateOrderDisplay(order) {
+            const orderElement = document.getElementById(`order-${order.id}`);
+            const paidStatusElement = orderElement.querySelector('.paid-status');
+
+            // 根据订单状态设置图案
+            if (order.paidStatus === 'red-circle') {
+                paidStatusElement.innerHTML = '🔴'; // 红色圆形图案
+            } else if (order.paidStatus === 'blue-circle') {
+                paidStatusElement.innerHTML = '🔵'; // 蓝色圆形图案
+            }
+
+            // 添加点击事件监听器
+            paidStatusElement.onclick = function() {
+                if (confirm('是否要变更为蓝色圆形图案？')) {
+                    order.paidStatus = 'blue-circle';
+                    updateOrderDisplay(order);
+                }
+            };
         }
 
         function exportToExcel(orders) {
