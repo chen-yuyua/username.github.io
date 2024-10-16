@@ -353,15 +353,22 @@
                 const orderId = e.target.getAttribute('data-id');
                 const isPaid = e.target.classList.contains('red-circle');
                 if (confirm('是否要變更為藍色圓形圖案？')) {
-                    updatePaidStatus(orderId, isPaid);
+                    updatePaidStatus(orderId, isPaid, e.target);
                 }
             });
         }
 
         // 更新已繳費狀態到 Firebase
-        function updatePaidStatus(orderId, isPaid) {
+        function updatePaidStatus(orderId, isPaid, element) {
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).then(() => {
-                loadOrdersFromDatabase(); // 重新載入訂單，確保所有使用者看到的資料一致
+                // 更新圖案顏色
+                if (!isPaid) {
+                    element.classList.remove('red-circle');
+                    element.classList.add('blue-circle');
+                } else {
+                    element.classList.remove('blue-circle');
+                    element.classList.add('red-circle');
+                }
             }).catch((error) => {
                 console.error("Error updating paid status: ", error);
             });
@@ -379,13 +386,13 @@
 
         // 載入訂單
         function loadOrdersFromDatabase() {
-            db.collection("orders").get().then((querySnapshot) => {
+            db.collection("orders").onSnapshot((querySnapshot) => {
                 const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
                 const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = ''; // 清除舊資料
                 orders.forEach((order, index) => appendOrderToTable(order, index));
                 updateTotalPrice();
-            }).catch((error) => {
+            }, (error) => {
                 console.error("Error getting orders: ", error);
             });
         }
