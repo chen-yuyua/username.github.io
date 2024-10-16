@@ -453,6 +453,61 @@
             const isPaid = false; // 將此行改為固定值 false
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
+
+        // 導出訂單為 Excel
+        function exportToExcel() {
+            const table = document.getElementById('orderTable');
+            let csv = [];
+            for (let i = 0; i < table.rows.length; i++) {
+                let row = [], cols = table.rows[i].cells;
+                for (let j = 1; j < cols.length; j++) {
+                    row.push(cols[j].innerText);
+                }
+                csv.push(row.join(","));
+            }
+            let csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "訂單.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        // 清除所有訂單
+        function clearAllOrders() {
+            if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
+                db.collection("orders").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        doc.ref.delete();
+                    });
+                }).catch((error) => {
+                    console.error("清除訂單時出錯: ", error);
+                });
+            }
+        }
+
+        // 刪除選中的訂單
+        function deleteSelectedOrders() {
+            const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
+            if (checkboxes.length === 0) {
+                alert('請先選擇要刪除的訂單');
+                return;
+            }
+            if (confirm(`確定要刪除選中的 ${checkboxes.length} 筆訂單嗎？`)) {
+                checkboxes.forEach((checkbox) => {
+                    const orderId = checkbox.getAttribute('data-id');
+                    db.collection("orders").doc(orderId).delete().catch((error) => {
+                        console.error("刪除訂單時出錯: ", error);
+                    });
+                });
+            }
+        }
+
+        // 添加事件監聽器
+        document.getElementById('exportButton').addEventListener('click', exportToExcel);
+        document.getElementById('clearButton').addEventListener('click', clearAllOrders);
+        document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
     </script>
 </body>
 
