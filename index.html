@@ -353,21 +353,18 @@
                 const orderId = e.target.getAttribute('data-id');
                 const isPaid = e.target.classList.contains('red-circle');
                 if (confirm('是否要變更為藍色圓形圖案？')) {
-                    updatePaidStatus(orderId, isPaid, e.target);
+                    updatePaidStatus(orderId, isPaid);
                 }
             });
         }
 
         // 更新已繳費狀態到 Firebase
-        function updatePaidStatus(orderId, isPaid, element) {
+        function updatePaidStatus(orderId, isPaid) {
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid }).then(() => {
-                // 更新圖案顏色
-                if (!isPaid) {
-                    element.classList.remove('red-circle');
-                    element.classList.add('blue-circle');
-                } else {
-                    element.classList.remove('blue-circle');
-                    element.classList.add('red-circle');
+                const paidStatusElement = document.querySelector(`.paid-status[data-id="${orderId}"]`);
+                if (paidStatusElement) {
+                    paidStatusElement.classList.toggle('red-circle');
+                    paidStatusElement.classList.toggle('blue-circle');
                 }
             }).catch((error) => {
                 console.error("Error updating paid status: ", error);
@@ -386,13 +383,13 @@
 
         // 載入訂單
         function loadOrdersFromDatabase() {
-            db.collection("orders").onSnapshot((querySnapshot) => {
+            db.collection("orders").get().then((querySnapshot) => {
                 const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
                 const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = ''; // 清除舊資料
                 orders.forEach((order, index) => appendOrderToTable(order, index));
                 updateTotalPrice();
-            }, (error) => {
+            }).catch((error) => {
                 console.error("Error getting orders: ", error);
             });
         }
@@ -578,8 +575,7 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            const isPaid = false; // 新訂單預設為未繳費
-            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
+            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid: false });
         });
     </script>
 </body>
