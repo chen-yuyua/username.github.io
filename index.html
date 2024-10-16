@@ -581,6 +581,40 @@
             const isPaid = false; // 新訂單預設為未繳費
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
+
+        function clearOrder(orderId) {
+            // ... existing code ...
+            const order = getOrderById(orderId);
+            if (order.isPaid) {
+                // 如果已缴费，直接返回，不删除
+                return;
+            }
+            // ... existing code to delete order ...
+        }
+
+        function submitOrder(order) {
+            // ... existing code ...
+            if (isDoubleClick()) {
+                // 防止双击提交导致的重复删除
+                return;
+            }
+            // ... existing code to add order to today's orders ...
+        }
+
+        function exportToExcel(orders) {
+            // ... existing code ...
+            const processedOrders = orders.map(order => {
+                if (order.isPaid) {
+                    order.paidStatus = "◎"; // 将已缴费状态设置为 "◎"
+                } else {
+                    order.paidStatus = ""; // 未缴费状态为空
+                }
+                return order;
+            });
+
+            // 使用 processedOrders 进行 Excel 导出
+            // ... existing code to export processedOrders to Excel ...
+        }
     </script>
 </body>
 
