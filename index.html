@@ -127,6 +127,7 @@
         th {
             background-color: var(--primary-color);
             color: white;
+            text-align: center; /* 新增此行以居中表头文字 */
         }
 
         tr:last-child td {
@@ -391,7 +392,7 @@
 
         // 更換圖片
         function changeImage(event) {
-            const password = prompt('請輸入密碼以更換圖片：');
+            const password = prompt('請輸密碼以更換圖片：');
             if (password === '0841') {
                 const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
                 if (confirmChange) {
@@ -508,6 +509,23 @@
         document.getElementById('exportButton').addEventListener('click', exportToExcel);
         document.getElementById('clearButton').addEventListener('click', clearAllOrders);
         document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
+
+        document.getElementById('changeImageButton').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const storageRef = storage.ref(`menu/${file.name}`);
+                storageRef.put(file).then(() => {
+                    alert('圖片上傳成功！');
+                    loadMenuImage(); // 重新加載菜單圖片
+                }).catch((error) => {
+                    console.error("圖片上傳失敗: ", error);
+                });
+            }
+        });
     </script>
 </body>
 
