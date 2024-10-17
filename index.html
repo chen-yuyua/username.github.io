@@ -254,27 +254,29 @@
         </div>
 
         <h2>今日訂單</h2>
-        <table id="orderTable">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>No.</th>
-                    <th>已繳費</th>
-                    <th>姓名</th>
-                    <th>餐點</th>
-                    <th>價格</th>
-                    <th>訂購時間</th>
-                    <th>備註</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div id="orderSection">
+            <table id="orderTable">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>No.</th>
+                        <th>已繳費</th>
+                        <th>姓名</th>
+                        <th>餐點</th>
+                        <th>價格</th>
+                        <th>訂購時間</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
 
-        <div id="totalPrice">總價格: $0.00</div>
-        <div class="button-group">
-            <button id="exportButton">導出訂單為 Excel</button>
-            <button id="clearButton">清除資訊</button>
-            <button id="deleteSelectedButton">消除單筆資訊</button>
+            <div id="totalPrice">總價格: $0.00</div>
+            <div class="button-group">
+                <button id="exportButton">導出訂單為 Excel</button>
+                <button id="clearButton">清除資訊</button>
+                <button id="deleteSelectedButton">消除單筆資訊</button>
+            </div>
         </div>
     </div>
 
@@ -286,6 +288,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         // Firebase 配置
         const firebaseConfig = {
@@ -506,7 +509,15 @@
         }
 
         // 添加事件監聽器
-        document.getElementById('exportButton').addEventListener('click', exportToExcel);
+        document.getElementById('exportButton').addEventListener('click', function() {
+            const element = document.getElementById('orderSection'); // 确保这个ID是你要截图的区域
+            html2canvas(element).then(canvas => {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = '今日訂單.png';
+                link.click();
+            });
+        });
         document.getElementById('clearButton').addEventListener('click', clearAllOrders);
         document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
 
