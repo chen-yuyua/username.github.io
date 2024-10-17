@@ -537,6 +537,34 @@
                 });
             }
         });
+
+        document.getElementById('clearAllButton').addEventListener('click', function() {
+            showPasswordPrompt('清除所有資訊', clearAllInfo);
+        });
+
+        document.getElementById('clearSingleButton').addEventListener('click', function() {
+            showPasswordPrompt('清除��筆資訊', clearSingleInfo);
+        });
+
+        function showPasswordPrompt(action, callback) {
+            const password = prompt(`请输入密码以${action}:`);
+            if (password === '0841') { // 验证密码
+                alert(`${action}成功！`);
+                callback(); // 执行相应的清除操作
+            } else {
+                alert('密码错误！');
+            }
+        }
+
+        function clearAllInfo() {
+            // 在这里添加清除所有信息的逻辑
+            console.log('所有信息已清除');
+        }
+
+        function clearSingleInfo() {
+            // 在这里添加清除单笔信息的逻辑
+            console.log('单笔信息已清除');
+        }
     </script>
 </body>
 
