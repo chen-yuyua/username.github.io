@@ -358,6 +358,36 @@
             XLSX.writeFile(workbook, '今日訂單.xlsx');
         });
 
+        // 清除所有訂單
+        document.getElementById('clearButton').addEventListener('click', () => {
+            if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
+                db.collection("orders").get().then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        doc.ref.delete();
+                    });
+                }).catch((error) => {
+                    console.error("清除訂單時出錯: ", error);
+                });
+            }
+        });
+
+        // 刪除選中的訂單
+        document.getElementById('deleteSelectedButton').addEventListener('click', () => {
+            const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
+            if (checkboxes.length === 0) {
+                alert('請先選擇要刪除的訂單');
+                return;
+            }
+            if (confirm(`確定要刪除選中的 ${checkboxes.length} 筆訂單嗎？`)) {
+                checkboxes.forEach((checkbox) => {
+                    const orderId = checkbox.getAttribute('data-id');
+                    db.collection("orders").doc(orderId).delete().catch((error) => {
+                        console.error("刪除訂單時出錯: ", error);
+                    });
+                });
+            }
+        });
+
         // 載入菜單圖片
         function loadMenuImage() {
             db.collection("images").doc("menuImage").get().then((doc) => {
