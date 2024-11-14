@@ -127,7 +127,7 @@
         th {
             background-color: var(--primary-color);
             color: white;
-            text-align: center; /* 新增此行以居中表头文字 */
+            text-align: center;
         }
 
         tr:last-child td {
@@ -163,64 +163,6 @@
             display: flex;
             justify-content: flex-start;
             align-items: center;
-        }
-
-        select {
-            margin-left: 15px;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 16px;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
-        }
-
-        .modal-content {
-            margin: 10% auto;
-            display: block;
-            width: 80%;
-            max-width: 700px;
-        }
-
-        .close {
-            position: absolute;
-            top: 15px;
-            right: 35px;
-            color: #fff;
-            font-size: 40px;
-            font-weight: bold;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: #bbb;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .paid-status {
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .red-circle {
-            color: red;
-        }
-
-        .blue-circle {
-            color: blue;
         }
     </style>
 </head>
@@ -258,7 +200,6 @@
             <table id="orderTable">
                 <thead>
                     <tr>
-                        <th></th>
                         <th>No.</th>
                         <th>已繳費</th>
                         <th>姓名</th>
@@ -285,19 +226,22 @@
         <img class="modal-content" id="modalImage">
     </div>
 
+    <!-- Firebase and additional libraries -->
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+
     <script>
         // Firebase 配置
         const firebaseConfig = {
-            apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
-            authDomain: "lunch-order-2f467.firebaseapp.com",
-            projectId: "lunch-order-2f467",
-            storageBucket: "lunch-order-2f467.appspot.com",
-            messagingSenderId: "38416716299",
-            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
@@ -320,31 +264,20 @@
         // 新增訂單到資料庫
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
-                document.getElementById('orderForm').reset(); // 清除表單數據
+                document.getElementById('orderForm').reset();
             }).catch((error) => {
                 console.error("Error adding order: ", error);
             });
         }
 
-        // 載入訂單並使用即時監聽器
+        // 載入訂單並即時監聽
         function loadOrdersFromDatabase() {
             db.collection("orders").onSnapshot((querySnapshot) => {
                 const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
                 const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = ''; // 清除舊資料
+                tbody.innerHTML = '';
                 orders.forEach((order, index) => appendOrderToTable(order, index));
                 updateTotalPrice();
-            });
-        }
-
-        // 更新已繳費狀態到 Firebase
-        function updatePaidStatus(orderId, isPaid) {
-            db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
-            .then(() => {
-                console.log("付款狀態已成功更新");
-            })
-            .catch((error) => {
-                console.error("更新付款狀態時出錯: ", error);
             });
         }
 
@@ -363,88 +296,36 @@
             });
 
             row.innerHTML = `
-                <td><input type="checkbox" data-id="${order.id}" /></td>
                 <td>${index + 1}</td>
-                <td><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}" data-id="${order.id}">${order.isPaid ? '●' : '●'}</span></td>
+                <td><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}">${order.isPaid ? '●' : '●'}</span></td>
                 <td>${order.name}</td>
                 <td>${order.meal}</td>
                 <td>$${order.price.toFixed(2)}</td>
                 <td>${dateTimeString}</td>
                 <td>${order.note}</td>
             `;
-
-            // 已繳費狀態變更事件
-            row.querySelector('.paid-status').addEventListener('click', function (e) {
-                const orderId = e.target.getAttribute('data-id');
-                const isPaid = e.target.classList.contains('blue-circle');
-                if (confirm('是否要變更付款狀態？')) {
-                    updatePaidStatus(orderId, isPaid);
-                }
-            });
         }
 
         // 更新總價格
         function updateTotalPrice() {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             let totalPrice = Array.from(tbody.rows).reduce((sum, row) => {
-                const price = parseFloat(row.cells[5].textContent.replace('$', ''));
+                const price = parseFloat(row.cells[4].textContent.replace('$', ''));
                 return sum + price;
             }, 0);
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        // 更換圖片
-        function changeImage(event) {
-            const password = prompt('請輸密碼以更換圖片：');
-            if (password === '0841') {
-                const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
-                if (confirmChange) {
-                    db.collection("images").doc("menuImage").set({ url: event.target.value }).then(() => {
-                        document.getElementById('menuImage').src = event.target.value;
-                    }).catch((error) => {
-                        console.error("Error updating image URL: ", error);
-                    });
-                } else {
-                    event.target.value = '';
-                }
-            } else {
-                alert('密碼錯誤，無法更換圖片。');
-                event.target.value = '';
-            }
-        }
-
-        document.getElementById('imageSelector').addEventListener('change', changeImage);
-
-        // 載入菜單圖片
-        function loadMenuImage() {
-            db.collection("images").doc("menuImage").get().then((doc) => {
-                if (doc.exists) {
-                    document.getElementById('menuImage').src = doc.data().url;
-                    document.getElementById('imageSelector').value = doc.data().url;
-                }
-            });
-
-            // 加載下拉式選單中的圖片列表
-            storage.ref('menu').listAll().then((result) => {
-                const selector = document.getElementById('imageSelector');
-                selector.innerHTML = '<option value="">選擇圖片</option>';
-                result.items.forEach((imageRef) => {
-                    imageRef.getDownloadURL().then((url) => {
-                        const option = document.createElement('option');
-                        option.value = url;
-                        option.textContent = imageRef.name;
-                        selector.appendChild(option);
-                    });
-                });
-            }).catch((error) => {
-                console.error("Error loading images: ", error);
-            });
-        }
+        // 導出訂單為 Excel
+        document.getElementById('exportButton').addEventListener('click', () => {
+            const table = document.getElementById('orderTable');
+            const workbook = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(workbook, '今日訂單.xlsx');
+        });
 
         // 初始化訂單數據
         updateDateTime();
         loadOrdersFromDatabase();
-        loadMenuImage();
         setInterval(updateDateTime, 60000);
 
         document.getElementById('orderForm').addEventListener('submit', function (e) {
@@ -454,117 +335,9 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            const isPaid = false; // 將此行改為固定值 false
+            const isPaid = false;
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
-
-        // 導出訂單為 Excel
-        function exportToExcel() {
-            const table = document.getElementById('orderTable');
-            let csv = [];
-            for (let i = 0; i < table.rows.length; i++) {
-                let row = [], cols = table.rows[i].cells;
-                for (let j = 1; j < cols.length; j++) {
-                    row.push(cols[j].innerText);
-                }
-                csv.push(row.join(","));
-            }
-            let csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
-            let encodedUri = encodeURI(csvContent);
-            let link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "訂單.csv");
-            document.body.appendChild(link);
-            link.click();
-        }
-
-        // 清除所有訂單
-        function clearAllOrders() {
-            if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
-                db.collection("orders").get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        doc.ref.delete();
-                    });
-                }).catch((error) => {
-                    console.error("清除訂單時出錯: ", error);
-                });
-            }
-        }
-
-        // 刪除選中的訂單
-        function deleteSelectedOrders() {
-            const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
-            if (checkboxes.length === 0) {
-                alert('請先選擇要刪除的訂單');
-                return;
-            }
-            if (confirm(`確定要刪除選中的 ${checkboxes.length} 筆訂單嗎？`)) {
-                checkboxes.forEach((checkbox) => {
-                    const orderId = checkbox.getAttribute('data-id');
-                    db.collection("orders").doc(orderId).delete().catch((error) => {
-                        console.error("刪除訂單時出錯: ", error);
-                    });
-                });
-            }
-        }
-
-        // 添加事件監聽器
-        document.getElementById('exportButton').addEventListener('click', function() {
-            const element = document.getElementById('orderSection'); // 确保这个ID是你要截图的区域
-            html2canvas(element).then(canvas => {
-                const link = document.createElement('a');
-                link.href = canvas.toDataURL('image/png');
-                link.download = '今日訂單.png';
-                link.click();
-            });
-        });
-        document.getElementById('clearButton').addEventListener('click', clearAllOrders);
-        document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
-
-        document.getElementById('changeImageButton').addEventListener('click', function() {
-            document.getElementById('fileInput').click();
-        });
-
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const storageRef = storage.ref(`menu/${file.name}`);
-                storageRef.put(file).then(() => {
-                    alert('圖片上傳成功！');
-                    loadMenuImage(); // 重新加載菜單圖片
-                }).catch((error) => {
-                    console.error("圖片上傳失敗: ", error);
-                });
-            }
-        });
-
-        document.getElementById('clearAllButton').addEventListener('click', function() {
-            showPasswordPrompt('清除所有資訊', clearAllInfo);
-        });
-
-        document.getElementById('clearSingleButton').addEventListener('click', function() {
-            showPasswordPrompt('清除��筆資訊', clearSingleInfo);
-        });
-
-        function showPasswordPrompt(action, callback) {
-            const password = prompt(`请输入密码以${action}:`);
-            if (password === '0841') { // 验证密码
-                alert(`${action}成功！`);
-                callback(); // 执行相应的清除操作
-            } else {
-                alert('密码错误！');
-            }
-        }
-
-        function clearAllInfo() {
-            // 在这里添加清除所有信息的逻辑
-            console.log('所有信息已清除');
-        }
-
-        function clearSingleInfo() {
-            // 在这里添加清除单笔信息的逻辑
-            console.log('单笔信息已清除');
-        }
     </script>
 </body>
 
