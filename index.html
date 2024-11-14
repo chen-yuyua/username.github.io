@@ -127,7 +127,7 @@
         th {
             background-color: var(--primary-color);
             color: white;
-            text-align: center; /* 新增此行以居中表头文字 */
+            text-align: center;
         }
 
         tr:last-child td {
@@ -287,7 +287,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
     <script>
-        // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
             authDomain: "lunch-order-2f467.firebaseapp.com",
@@ -300,7 +299,6 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
-        // 更新日期時間
         function updateDateTime() {
             const now = new Date();
             const dateTimeString = now.toLocaleString('zh-TW', {
@@ -314,27 +312,24 @@
             document.getElementById('datetime').textContent = dateTimeString;
         }
 
-        // 新增訂單到資料庫
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
-                document.getElementById('orderForm').reset(); // 清除表單數據
+                document.getElementById('orderForm').reset();
             }).catch((error) => {
                 console.error("Error adding order: ", error);
             });
         }
 
-        // 載入訂單並使用即時監聽器
         function loadOrdersFromDatabase() {
             db.collection("orders").onSnapshot((querySnapshot) => {
                 const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
                 const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = ''; // 清除舊資料
+                tbody.innerHTML = '';
                 orders.forEach((order, index) => appendOrderToTable(order, index));
                 updateTotalPrice();
             });
         }
 
-        // 更新已繳費狀態到 Firebase
         function updatePaidStatus(orderId, isPaid) {
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
             .then(() => {
@@ -345,7 +340,6 @@
             });
         }
 
-        // 追加訂單到表格
         function appendOrderToTable(order, index) {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             const row = tbody.insertRow();
@@ -370,7 +364,6 @@
                 <td>${order.note}</td>
             `;
 
-            // 已繳費狀態變更事件
             row.querySelector('.paid-status').addEventListener('click', function (e) {
                 const orderId = e.target.getAttribute('data-id');
                 const isPaid = e.target.classList.contains('blue-circle');
@@ -380,7 +373,6 @@
             });
         }
 
-        // 更新總價格
         function updateTotalPrice() {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             let totalPrice = Array.from(tbody.rows).reduce((sum, row) => {
@@ -390,7 +382,6 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
-        // 更換圖片
         function changeImage(event) {
             const password = prompt('請輸密碼以更換圖片：');
             if (password === '0841') {
@@ -412,7 +403,6 @@
 
         document.getElementById('imageSelector').addEventListener('change', changeImage);
 
-        // 載入菜單圖片
         function loadMenuImage() {
             db.collection("images").doc("menuImage").get().then((doc) => {
                 if (doc.exists) {
@@ -421,7 +411,6 @@
                 }
             });
 
-            // 加載下拉式選單中的圖片列表
             storage.ref('menu').listAll().then((result) => {
                 const selector = document.getElementById('imageSelector');
                 selector.innerHTML = '<option value="">選擇圖片</option>';
@@ -438,7 +427,6 @@
             });
         }
 
-        // 初始化訂單數據
         updateDateTime();
         loadOrdersFromDatabase();
         loadMenuImage();
@@ -451,11 +439,10 @@
             const price = parseFloat(this.elements['price'].value);
             const note = this.elements['note'].value;
             const timestamp = Date.now();
-            const isPaid = false; // 將此行改為固定值 false
+            const isPaid = false;
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
 
-        // 導出訂單為 Excel
         function exportToExcel() {
             const table = document.getElementById('orderTable');
             let csv = [];
@@ -466,16 +453,16 @@
                 }
                 csv.push(row.join(","));
             }
-            let csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
-            let encodedUri = encodeURI(csvContent);
+            let csvContent = "\uFEFF" + csv.join("\n");
+            let encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             link.setAttribute("download", "訂單.csv");
             document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
         }
 
-        // 清除所有訂單
         function clearAllOrders() {
             if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
                 db.collection("orders").get().then((querySnapshot) => {
@@ -488,7 +475,6 @@
             }
         }
 
-        // 刪除選中的訂單
         function deleteSelectedOrders() {
             const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
             if (checkboxes.length === 0) {
@@ -505,7 +491,6 @@
             }
         }
 
-        // 添加事件監聽器
         document.getElementById('exportButton').addEventListener('click', exportToExcel);
         document.getElementById('clearButton').addEventListener('click', clearAllOrders);
         document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
@@ -520,7 +505,7 @@
                 const storageRef = storage.ref(`menu/${file.name}`);
                 storageRef.put(file).then(() => {
                     alert('圖片上傳成功！');
-                    loadMenuImage(); // 重新加載菜單圖片
+                    loadMenuImage();
                 }).catch((error) => {
                     console.error("圖片上傳失敗: ", error);
                 });
