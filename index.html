@@ -414,6 +414,24 @@
             });
         }
 
+        // 圖片上傳
+        document.getElementById('changeImageButton').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const storageRef = storage.ref(`menu/${file.name}`);
+                storageRef.put(file).then(() => {
+                    alert('圖片上傳成功！');
+                    loadMenuImage(); // 重新加載菜單圖片
+                }).catch((error) => {
+                    console.error("圖片上傳失敗: ", error);
+                });
+            }
+        });
+
         // 初始化訂單數據
         updateDateTime();
         loadOrdersFromDatabase();
