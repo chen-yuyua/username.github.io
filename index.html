@@ -390,14 +390,6 @@
 
         // 載入菜單圖片
         function loadMenuImage() {
-            db.collection("images").doc("menuImage").get().then((doc) => {
-                if (doc.exists) {
-                    document.getElementById('menuImage').src = doc.data().url;
-                    document.getElementById('imageSelector').value = doc.data().url;
-                }
-            });
-
-            // 加載下拉式選單中的圖片列表
             storage.ref('menu').listAll().then((result) => {
                 const selector = document.getElementById('imageSelector');
                 selector.innerHTML = '<option value="">選擇圖片</option>';
