@@ -80,6 +80,10 @@
             background-color: #3a7bc8;
         }
 
+        .menu-image {
+            position: relative;
+        }
+
         .menu-image img {
             width: 100%;
             height: auto;
@@ -89,10 +93,27 @@
             transition: transform 0.3s ease-in-out;
         }
 
+        /* 原先的滑鼠懸停整體放大效果已移除 */
+        /*
         .menu-image img:hover {
             transform: scale(1.6);
             z-index: 1000;
             position: relative;
+        }
+        */
+
+        /* 新增放大鏡效果樣式，直徑 240px（半徑 120px），以滑鼠為圓心 */
+        .magnifier {
+            display: none;
+            position: absolute;
+            pointer-events: none;
+            width: 240px;
+            height: 240px;
+            border: 3px solid var(--primary-color);
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
         }
 
         h2 {
@@ -244,6 +265,8 @@
             <div class="menu-section">
                 <div class="menu-image">
                     <img id="menuImage" src="" alt="今日菜單" />
+                    <!-- 新增放大鏡容器 -->
+                    <div id="magnifier" class="magnifier"></div>
                 </div>
                 <button id="changeImageButton">上傳菜單</button>
                 <select id="imageSelector">
@@ -510,6 +533,40 @@
                     console.error("圖片上傳失敗: ", error);
                 });
             }
+        });
+
+        // 新增：放大鏡效果 - 當滑鼠移動至菜單區域時，以滑鼠為圓心、半徑 120px 的區域內放大 4 倍
+        const magnifier = document.getElementById('magnifier');
+        const menuImage = document.getElementById('menuImage');
+        const menuImageContainer = document.querySelector('.menu-image');
+
+        menuImageContainer.addEventListener('mousemove', function (e) {
+            const rect = menuImage.getBoundingClientRect();
+            // 取得滑鼠相對於圖片的座標
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // 顯示放大鏡
+            magnifier.style.display = "block";
+
+            // 以滑鼠為中心，定位放大鏡（放大鏡尺寸為 240px x 240px）
+            let magnifierX = x - magnifier.offsetWidth / 2;
+            let magnifierY = y - magnifier.offsetHeight / 2;
+            magnifier.style.left = magnifierX + "px";
+            magnifier.style.top = magnifierY + "px";
+
+            // 設定放大鏡背景為當前圖片，並以 4 倍放大
+            magnifier.style.backgroundImage = `url('${menuImage.src}')`;
+            magnifier.style.backgroundSize = (menuImage.width * 4) + "px " + (menuImage.height * 4) + "px";
+
+            // 計算背景位置，使得滑鼠所在處的區域置中於放大鏡內
+            const bgX = -x * 4 + magnifier.offsetWidth / 2;
+            const bgY = -y * 4 + magnifier.offsetHeight / 2;
+            magnifier.style.backgroundPosition = `${bgX}px ${bgY}px`;
+        });
+
+        menuImageContainer.addEventListener('mouseleave', function () {
+            magnifier.style.display = "none";
         });
     </script>
 </body>
