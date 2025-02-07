@@ -60,7 +60,8 @@
 
         input,
         textarea,
-        button {
+        button,
+        select {
             margin-bottom: 15px;
             padding: 12px;
             border: 1px solid var(--border-color);
@@ -186,14 +187,6 @@
             align-items: center;
         }
 
-        select {
-            margin-left: 15px;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 16px;
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -273,6 +266,11 @@
                     <option value="">選擇圖片</option>
                 </select>
                 <input type="file" id="fileInput" style="display: none;">
+                <!-- 新增刪除菜單按鈕及下拉式選單 -->
+                <button id="deleteMenuButton" style="background-color: pink; color: white; margin-top: 10px;">刪除菜單</button>
+                <select id="deleteMenuSelector" style="display: none; margin-top: 10px;">
+                    <option value="">選擇要刪除的菜單</option>
+                </select>
             </div>
         </div>
 
@@ -310,6 +308,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
     <script>
+        // Firebase 初始化
         const firebaseConfig = {
             apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
             authDomain: "lunch-order-2f467.firebaseapp.com",
@@ -322,6 +321,7 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
+        // 更新頁面日期與時間
         function updateDateTime() {
             const now = new Date();
             const dateTimeString = now.toLocaleString('zh-TW', {
@@ -335,6 +335,7 @@
             document.getElementById('datetime').textContent = dateTimeString;
         }
 
+        // 新增訂單至資料庫
         function addOrderToDatabase(order) {
             db.collection("orders").add(order).then(() => {
                 document.getElementById('orderForm').reset();
@@ -343,6 +344,7 @@
             });
         }
 
+        // 監聽訂單資料，並即時更新訂單列表與總金額
         function loadOrdersFromDatabase() {
             db.collection("orders").onSnapshot((querySnapshot) => {
                 const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
@@ -353,6 +355,7 @@
             });
         }
 
+        // 更新付款狀態
         function updatePaidStatus(orderId, isPaid) {
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
             .then(() => {
@@ -363,6 +366,7 @@
             });
         }
 
+        // 將訂單資料加入表格中
         function appendOrderToTable(order, index) {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             const row = tbody.insertRow();
@@ -396,6 +400,7 @@
             });
         }
 
+        // 計算所有訂單的總價格
         function updateTotalPrice() {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             let totalPrice = Array.from(tbody.rows).reduce((sum, row) => {
@@ -405,6 +410,7 @@
             document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
         }
 
+        // 更換菜單圖片 (需輸入密碼驗證)
         function changeImage(event) {
             const password = prompt('請輸密碼以更換圖片：');
             if (password === '0841') {
@@ -426,6 +432,7 @@
 
         document.getElementById('imageSelector').addEventListener('change', changeImage);
 
+        // 讀取目前菜單圖片與 Storage 中的菜單檔案列表
         function loadMenuImage() {
             db.collection("images").doc("menuImage").get().then((doc) => {
                 if (doc.exists) {
@@ -466,6 +473,7 @@
             addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
         });
 
+        // 導出訂單為 CSV 檔案
         function exportToExcel() {
             const table = document.getElementById('orderTable');
             let csv = [];
@@ -486,6 +494,7 @@
             document.body.removeChild(link);
         }
 
+        // 清除所有訂單
         function clearAllOrders() {
             if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
                 db.collection("orders").get().then((querySnapshot) => {
@@ -498,6 +507,7 @@
             }
         }
 
+        // 刪除選取的訂單
         function deleteSelectedOrders() {
             const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
             if (checkboxes.length === 0) {
@@ -567,6 +577,54 @@
 
         menuImageContainer.addEventListener('mouseleave', function () {
             magnifier.style.display = "none";
+        });
+
+        // 新增：刪除菜單功能
+
+        // 當點擊「刪除菜單」按鈕時，顯示或隱藏下拉選單，並載入 Storage 中的菜單檔案列表
+        document.getElementById('deleteMenuButton').addEventListener('click', function() {
+            const deleteSelector = document.getElementById('deleteMenuSelector');
+            if (deleteSelector.style.display === "none" || deleteSelector.style.display === "") {
+                deleteSelector.style.display = "block";
+                loadDeleteMenuList();
+            } else {
+                deleteSelector.style.display = "none";
+            }
+        });
+
+        // 載入 Firebase Storage 中 menu 資料夾內所有檔案，並填入刪除用下拉式選單
+        function loadDeleteMenuList() {
+            const deleteSelector = document.getElementById('deleteMenuSelector');
+            deleteSelector.innerHTML = '<option value="">選擇要刪除的菜單</option>';
+            storage.ref('menu').listAll().then((result) => {
+                result.items.forEach((imageRef) => {
+                    const option = document.createElement('option');
+                    // 儲存檔案名稱作為 value
+                    option.value = imageRef.name;
+                    option.textContent = imageRef.name;
+                    deleteSelector.appendChild(option);
+                });
+            }).catch((error) => {
+                console.error("取得菜單列表時發生錯誤: ", error);
+            });
+        }
+
+        // 當使用者從下拉式選單中選擇檔案後，詢問是否刪除該菜單
+        document.getElementById('deleteMenuSelector').addEventListener('change', function() {
+            const fileName = this.value;
+            if (!fileName) return;
+            if (confirm("確定要刪除 " + fileName + " 這個菜單嗎？")) {
+                const fileRef = storage.ref('menu/' + fileName);
+                fileRef.delete().then(() => {
+                    alert("菜單 " + fileName + " 已成功刪除！");
+                    // 重新載入刪除與上傳下拉選單
+                    loadDeleteMenuList();
+                    loadMenuImage();
+                }).catch((error) => {
+                    console.error("刪除菜單時發生錯誤: ", error);
+                    alert("刪除失敗，請稍後再試。");
+                });
+            }
         });
     </script>
 </body>
