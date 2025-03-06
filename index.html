@@ -4,15 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設計分室午餐點餐系統 Ver1.3</title>
+    <title>設計分室午餐點餐系統 Ver2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #4a90e2;
+            --primary-light: #6baae8;
+            --primary-dark: #3a7bc8;
             --secondary-color: #f39c12;
+            --secondary-light: #f7b541;
+            --secondary-dark: #e67e22;
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f1c40f;
             --background-color: #f5f7fa;
+            --card-background: #ffffff;
             --text-color: #333333;
+            --text-secondary: #666666;
             --border-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
@@ -22,88 +40,255 @@
             padding: 0;
             background-color: var(--background-color);
             color: var(--text-color);
+            min-height: 100vh;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 2rem;
         }
 
-        h1 {
-            color: var(--primary-color);
-            font-size: 2.5em;
+        .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 1px 1px 2px var(--shadow-color);
+            position: relative;
+            display: inline-block;
+        }
+
+        .header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        .version-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 0.8rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 1rem;
+            font-weight: 500;
+        }
+
+        #datetime {
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+            font-weight: 500;
         }
 
         .content-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            box-shadow: 0 6px 15px var(--shadow-color);
+            padding: 1.5rem;
+            transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px var(--shadow-color);
+        }
+
+        .card-header {
             display: flex;
-            gap: 40px;
-            margin-bottom: 40px;
-            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .form-section,
-        .menu-section {
-            flex: 1;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 30px;
+        .card-icon {
+            background-color: var(--primary-light);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            font-size: 1.2rem;
         }
 
+        .card-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* 表單樣式 */
         form {
             display: flex;
             flex-direction: column;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .input-icon {
+            position: relative;
+        }
+
+        .input-icon i {
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 1rem;
         }
 
         input,
         textarea,
         button,
         select {
-            margin-bottom: 15px;
-            padding: 12px;
+            width: 100%;
+            padding: 0.8rem 1rem;
             border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+            font-family: 'Noto Sans TC', sans-serif;
         }
 
-        button {
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        .input-icon input {
+            padding-left: 2.8rem;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #aaa;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            display: inline-block;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 0.8rem 1.2rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:focus {
+            outline: none;
+        }
+
+        .btn-primary {
             background-color: var(--primary-color);
             color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
         }
 
-        button:hover {
-            background-color: #3a7bc8;
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
         }
 
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--secondary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        /* 菜單圖片樣式 */
         .menu-image {
             position: relative;
+            margin-bottom: 1.5rem;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            box-shadow: 0 4px 8px var(--shadow-color);
         }
 
         .menu-image img {
             width: 100%;
             height: auto;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: transform 0.3s ease-in-out;
+            display: block;
+            transition: transform var(--transition-speed);
         }
 
-        /* 原先的滑鼠懸停整體放大效果已移除 */
-        /*
-        .menu-image img:hover {
-            transform: scale(1.6);
-            z-index: 1000;
-            position: relative;
-        }
-        */
-
-        /* 新增放大鏡效果樣式，直徑 240px（半徑 120px），以滑鼠為圓心 */
         .magnifier {
             display: none;
             position: absolute;
@@ -113,35 +298,78 @@
             border: 3px solid var(--primary-color);
             border-radius: 50%;
             overflow: hidden;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
             z-index: 1000;
         }
 
-        h2 {
-            color: var(--primary-color);
-            margin-top: 0;
+        .menu-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
-        #datetime {
-            text-align: center;
-            font-size: 1.2em;
+        .img-selector-group {
+            margin-top: 1rem;
+        }
+
+        .selector-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        /* 訂單表格樣式 */
+        .orders-section {
+            margin-top: 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
             color: var(--primary-color);
-            margin-bottom: 20px;
+            font-size: 1.8rem;
+            font-weight: 600;
+            position: relative;
+            padding-left: 1rem;
+        }
+
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 5px;
+            height: 25px;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px var(--shadow-color);
+            margin-bottom: 1.5rem;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-            background-color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
         }
 
         th,
         td {
-            padding: 15px;
+            padding: 1rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
@@ -149,153 +377,402 @@
         th {
             background-color: var(--primary-color);
             color: white;
-            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
         }
 
         tr:last-child td {
             border-bottom: none;
         }
 
-        #totalPrice {
-            text-align: right;
-            font-weight: bold;
-            font-size: 1.2em;
-            margin-top: 20px;
+        tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        tr:hover td {
+            background-color: rgba(74, 144, 226, 0.05);
+        }
+
+        .paid-status {
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 auto;
+            transition: transform var(--transition-speed);
+        }
+
+        .paid-status:hover {
+            transform: scale(1.2);
+        }
+
+        .blue-circle {
             color: var(--primary-color);
         }
 
-        .button-group button {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-            margin-right: 10px;
+        .red-circle {
+            color: var(--danger-color);
         }
 
-        .button-group button:hover {
-            background-color: #e67e22;
+        #totalPrice {
+            text-align: right;
+            font-weight: bold;
+            font-size: 1.3rem;
+            margin: 1.5rem 0;
+            color: var(--primary-color);
+            background-color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px var(--shadow-color);
         }
 
         .button-group {
             display: flex;
-            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .button-group button {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .checkbox-center {
+            display: flex;
+            justify-content: center;
             align-items: center;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
         }
 
         .modal {
             display: none;
             position: fixed;
-            z-index: 1000;
+            z-index: 1100;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease;
         }
 
         .modal-content {
-            margin: 10% auto;
+            margin: 5% auto;
             display: block;
-            width: 80%;
-            max-width: 700px;
+            max-width: 80%;
+            max-height: 80vh;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            animation: zoom 0.3s ease;
+        }
+
+        @keyframes zoom {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .close {
             position: absolute;
-            top: 15px;
+            top: 20px;
             right: 35px;
             color: #fff;
             font-size: 40px;
             font-weight: bold;
             transition: 0.3s;
             cursor: pointer;
+            z-index: 1101;
         }
 
-        .close:hover,
-        .close:focus {
-            color: #bbb;
-            text-decoration: none;
+        .close:hover {
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(74, 144, 226, 0.8);
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group button {
+                width: 100%;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .section-title {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* 加載動畫 */
+        .loader-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 通知提示 */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+
+        .toast {
+            background-color: white;
+            color: var(--text-color);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease forwards;
+            max-width: 350px;
+        }
+
+        .toast.success {
+            border-left: 5px solid var(--success-color);
+        }
+
+        .toast.error {
+            border-left: 5px solid var(--danger-color);
+        }
+
+        .toast.warning {
+            border-left: 5px solid var(--warning-color);
+        }
+
+        .toast.info {
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .toast-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        .toast.success .toast-icon {
+            color: var(--success-color);
+        }
+
+        .toast.error .toast-icon {
+            color: var(--danger-color);
+        }
+
+        .toast.warning .toast-icon {
+            color: var(--warning-color);
+        }
+
+        .toast.info .toast-icon {
+            color: var(--primary-color);
+        }
+
+        .toast-message {
+            flex-grow: 1;
+        }
+
+        .toast-close {
+            color: #aaa;
+            font-weight: bold;
+            font-size: 16px;
             cursor: pointer;
+            margin-left: 10px;
         }
 
-        .paid-status {
-            font-size: 24px;
-            cursor: pointer;
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
-        .red-circle {
-            color: red;
-        }
-
-        .blue-circle {
-            color: blue;
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>設計分室午餐點餐系統 Ver1.3</h1>
-        <div id="datetime"></div>
+        <div class="header">
+            <h1>設計分室午餐點餐系統</h1>
+            <span class="version-badge">Ver 2.0</span>
+            <div id="datetime"></div>
+        </div>
 
         <div class="content-wrapper">
-            <div class="form-section">
-                <h2>訂餐表單</h2>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h2 class="card-title">訂餐表單</h2>
+                </div>
                 <form id="orderForm">
-                    <input type="text" name="name" placeholder="您的姓名" required>
-                    <input type="text" name="meal" placeholder="餐點名稱" required>
-                    <input type="number" name="price" placeholder="價格" step="0.01" min="0" required>
-                    <textarea name="note" placeholder="備註（如有特殊要求請填寫）" rows="3"></textarea>
-                    <button type="submit">提交訂單</button>
+                    <div class="form-group">
+                        <label for="name">姓名</label>
+                        <div class="input-icon">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="meal">餐點</label>
+                        <div class="input-icon">
+                            <i class="fas fa-hamburger"></i>
+                            <input type="text" id="meal" name="meal" placeholder="請輸入餐點名稱" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">價格</label>
+                        <div class="input-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                            <input type="number" id="price" name="price" placeholder="請輸入價格" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="note">備註</label>
+                        <textarea id="note" name="note" placeholder="如有特殊要求請填寫（非必填）"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> 提交訂單
+                    </button>
                 </form>
             </div>
-            <div class="menu-section">
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <h2 class="card-title">今日菜單</h2>
+                </div>
                 <div class="menu-image">
                     <img id="menuImage" src="" alt="今日菜單" />
-                    <!-- 新增放大鏡容器 -->
                     <div id="magnifier" class="magnifier"></div>
                 </div>
-                <button id="changeImageButton">上傳菜單</button>
-                <select id="imageSelector">
-                    <option value="">選擇圖片</option>
-                </select>
-                <input type="file" id="fileInput" style="display: none;">
-                <!-- 新增刪除菜單按鈕及下拉式選單 -->
-                <button id="deleteMenuButton" style="background-color: pink; color: white; margin-top: 10px;">刪除菜單</button>
-                <select id="deleteMenuSelector" style="display: none; margin-top: 10px;">
-                    <option value="">選擇要刪除的菜單</option>
-                </select>
+                <div class="menu-controls">
+                    <button id="changeImageButton" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> 上傳菜單
+                    </button>
+                    <button id="deleteMenuButton" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> 刪除菜單
+                    </button>
+                </div>
+                <div class="img-selector-group">
+                    <label class="selector-label" for="imageSelector">選擇已有菜單</label>
+                    <select id="imageSelector">
+                        <option value="">請選擇菜單</option>
+                    </select>
+                </div>
+                <div class="img-selector-group" id="deleteMenuSelectorContainer" style="display: none;">
+                    <label class="selector-label" for="deleteMenuSelector">選擇要刪除的菜單</label>
+                    <select id="deleteMenuSelector">
+                        <option value="">請選擇要刪除的菜單</option>
+                    </select>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
             </div>
         </div>
 
-        <h2>今日訂單</h2>
-        <table id="orderTable">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>No.</th>
-                    <th>已繳費</th>
-                    <th>姓名</th>
-                    <th>餐點</th>
-                    <th>價格</th>
-                    <th>訂購時間</th>
-                    <th>備註</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <div id="totalPrice">總價格: $0.00</div>
-        <div class="button-group">
-            <button id="exportButton">導出訂單為 Excel</button>
-            <button id="clearButton">清除資訊</button>
-            <button id="deleteSelectedButton">消除單筆資訊</button>
+        <div class="orders-section">
+            <div class="section-header">
+                <h2 class="section-title">今日訂單</h2>
+                <div id="totalPrice">總價格: $0.00</div>
+            </div>
+            <div class="table-container">
+                <table id="orderTable">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-center"><i class="fas fa-check-square"></i></th>
+                            <th>No.</th>
+                            <th>付款狀態</th>
+                            <th>姓名</th>
+                            <th>餐點</th>
+                            <th>價格</th>
+                            <th>訂購時間</th>
+                            <th>備註</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="button-group">
+                <button id="exportButton" class="btn btn-primary">
+                    <i class="fas fa-file-export"></i> 導出訂單為 Excel
+                </button>
+                <button id="deleteSelectedButton" class="btn btn-secondary">
+                    <i class="fas fa-trash"></i> 刪除選中訂單
+                </button>
+                <button id="clearButton" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> 清空所有訂單
+                </button>
+            </div>
         </div>
     </div>
 
@@ -303,6 +780,12 @@
         <span class="close">&times;</span>
         <img class="modal-content" id="modalImage">
     </div>
+
+    <div class="loader-container" id="loaderContainer">
+        <div class="loader"></div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
@@ -321,6 +804,70 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
+        // 載入與顯示元素
+        const loaderContainer = document.getElementById('loaderContainer');
+        const toastContainer = document.getElementById('toastContainer');
+        const deleteMenuSelectorContainer = document.getElementById('deleteMenuSelectorContainer');
+
+        // 顯示加載動畫
+        function showLoader() {
+            loaderContainer.style.display = 'flex';
+        }
+
+        // 隱藏加載動畫
+        function hideLoader() {
+            loaderContainer.style.display = 'none';
+        }
+
+        // 顯示通知提示
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = '';
+            switch(type) {
+                case 'success':
+                    icon = '<i class="fas fa-check-circle toast-icon"></i>';
+                    break;
+                case 'error':
+                    icon = '<i class="fas fa-exclamation-circle toast-icon"></i>';
+                    break;
+                case 'warning':
+                    icon = '<i class="fas fa-exclamation-triangle toast-icon"></i>';
+                    break;
+                default:
+                    icon = '<i class="fas fa-info-circle toast-icon"></i>';
+            }
+            
+            toast.innerHTML = `
+                ${icon}
+                <div class="toast-message">${message}</div>
+                <span class="toast-close">&times;</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // 添加關閉功能
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            });
+            
+            // 自動關閉
+            setTimeout(() => {
+                if (toast.parentNode === toastContainer) {
+                    toast.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => {
+                        if (toast.parentNode === toastContainer) {
+                            toast.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+
         // 更新頁面日期與時間
         function updateDateTime() {
             const now = new Date();
@@ -330,6 +877,7 @@
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
+                second: '2-digit',
                 hour12: false
             });
             document.getElementById('datetime').textContent = dateTimeString;
@@ -337,33 +885,64 @@
 
         // 新增訂單至資料庫
         function addOrderToDatabase(order) {
-            db.collection("orders").add(order).then(() => {
-                document.getElementById('orderForm').reset();
-            }).catch((error) => {
-                console.error("Error adding order: ", error);
-            });
+            showLoader();
+            db.collection("orders").add(order)
+                .then(() => {
+                    document.getElementById('orderForm').reset();
+                    hideLoader();
+                    showToast('訂單已成功提交！', 'success');
+                })
+                .catch((error) => {
+                    console.error("新增訂單時出錯: ", error);
+                    hideLoader();
+                    showToast('提交訂單失敗，請稍後再試。', 'error');
+                });
         }
 
         // 監聽訂單資料，並即時更新訂單列表與總金額
         function loadOrdersFromDatabase() {
+            showLoader();
             db.collection("orders").onSnapshot((querySnapshot) => {
-                const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
+                const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => b.timestamp - a.timestamp);
+                
                 const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = '';
-                orders.forEach((order, index) => appendOrderToTable(order, index));
+                
+                if (orders.length === 0) {
+                    // 如果沒有訂單，顯示空訊息
+                    const emptyRow = tbody.insertRow();
+                    const emptyCell = emptyRow.insertCell();
+                    emptyCell.colSpan = 8;
+                    emptyCell.style.textAlign = 'center';
+                    emptyCell.style.padding = '2rem';
+                    emptyCell.innerHTML = '<i class="fas fa-info-circle"></i> 目前尚無訂單';
+                } else {
+                    orders.forEach((order, index) => appendOrderToTable(order, index));
+                }
+                
                 updateTotalPrice();
+                hideLoader();
+            }, (error) => {
+                console.error("讀取訂單時出錯: ", error);
+                hideLoader();
+                showToast('載入訂單時發生錯誤，請重新整理頁面。', 'error');
             });
         }
 
         // 更新付款狀態
         function updatePaidStatus(orderId, isPaid) {
+            showLoader();
             db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
-            .then(() => {
-                console.log("付款狀態已成功更新");
-            })
-            .catch((error) => {
-                console.error("更新付款狀態時出錯: ", error);
-            });
+                .then(() => {
+                    hideLoader();
+                    showToast(isPaid ? '已更改為未繳費狀態' : '已更改為已繳費狀態', 'success');
+                })
+                .catch((error) => {
+                    console.error("更新付款狀態時出錯: ", error);
+                    hideLoader();
+                    showToast('更新付款狀態失敗，請稍後再試。', 'error');
+                });
         }
 
         // 將訂單資料加入表格中
@@ -381,20 +960,20 @@
             });
 
             row.innerHTML = `
-                <td><input type="checkbox" data-id="${order.id}" /></td>
+                <td class="checkbox-center"><input type="checkbox" data-id="${order.id}" /></td>
                 <td>${index + 1}</td>
-                <td><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}" data-id="${order.id}">${order.isPaid ? '●' : '●'}</span></td>
+                <td class="checkbox-center"><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}" data-id="${order.id}" title="${order.isPaid ? '已繳費' : '未繳費'}"><i class="fas ${order.isPaid ? 'fa-check-circle' : 'fa-times-circle'}"></i></span></td>
                 <td>${order.name}</td>
                 <td>${order.meal}</td>
-                <td>$${order.price.toFixed(2)}</td>
+                <td>${order.price.toFixed(2)}</td>
                 <td>${dateTimeString}</td>
-                <td>${order.note}</td>
+                <td>${order.note || '無'}</td>
             `;
 
             row.querySelector('.paid-status').addEventListener('click', function (e) {
-                const orderId = e.target.getAttribute('data-id');
-                const isPaid = e.target.classList.contains('blue-circle');
-                if (confirm('是否要變更付款狀態？')) {
+                const orderId = e.target.closest('.paid-status').getAttribute('data-id');
+                const isPaid = e.target.closest('.paid-status').classList.contains('blue-circle');
+                if (confirm(`確定要將此訂單狀態變更為${isPaid ? '未繳費' : '已繳費'}嗎？`)) {
                     updatePaidStatus(orderId, isPaid);
                 }
             });
@@ -404,301 +983,20 @@
         function updateTotalPrice() {
             const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
             let totalPrice = Array.from(tbody.rows).reduce((sum, row) => {
-                const price = parseFloat(row.cells[5].textContent.replace('$', ''));
-                return sum + price;
+                // 確保只有實際訂單行（有價格欄位）才被計算
+                if (row.cells.length >= 6) {
+                    const priceText = row.cells[5].textContent;
+                    if (priceText && priceText.includes('
+            )) {
+                        const price = parseFloat(priceText.replace('
+            , ''));
+                        return sum + (isNaN(price) ? 0 : price);
+                    }
+                }
+                return sum;
             }, 0);
-            document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
-        }
-
-        // 更換菜單圖片 (需輸入密碼驗證)
-        function changeImage(event) {
-            const password = prompt('請輸密碼以更換圖片：');
-            if (password === '0841') {
-                const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
-                if (confirmChange) {
-                    db.collection("images").doc("menuImage").set({ url: event.target.value }).then(() => {
-                        document.getElementById('menuImage').src = event.target.value;
-                    }).catch((error) => {
-                        console.error("Error updating image URL: ", error);
-                    });
-                } else {
-                    event.target.value = '';
-                }
-            } else {
-                alert('密碼錯誤，無法更換圖片。');
-                event.target.value = '';
-            }
-        }
-
-        document.getElementById('imageSelector').addEventListener('change', changeImage);
-
-        // 讀取目前菜單圖片與 Storage 中的菜單檔案列表
-        function loadMenuImage() {
-            db.collection("images").doc("menuImage").get().then((doc) => {
-                if (doc.exists) {
-                    document.getElementById('menuImage').src = doc.data().url;
-                    document.getElementById('imageSelector').value = doc.data().url;
-                }
-            });
-
-            storage.ref('menu').listAll().then((result) => {
-                const selector = document.getElementById('imageSelector');
-                selector.innerHTML = '<option value="">選擇圖片</option>';
-                result.items.forEach((imageRef) => {
-                    imageRef.getDownloadURL().then((url) => {
-                        const option = document.createElement('option');
-                        option.value = url;
-                        option.textContent = imageRef.name;
-                        selector.appendChild(option);
-                    });
-                });
-            }).catch((error) => {
-                console.error("Error loading images: ", error);
-            });
-        }
-
-        updateDateTime();
-        loadOrdersFromDatabase();
-        loadMenuImage();
-        setInterval(updateDateTime, 60000);
-
-        document.getElementById('orderForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const name = this.elements['name'].value;
-            const meal = this.elements['meal'].value;
-            const price = parseFloat(this.elements['price'].value);
-            const note = this.elements['note'].value;
-            const timestamp = Date.now();
-            const isPaid = false;
-            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
-        });
-
-        // 導出訂單為 Excel 檔案 (XLSX格式，支援顏色)
-        function exportToExcel() {
-            // 先加載 SheetJS 庫
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-            script.onload = function() {
-                // 獲取所有訂單數據直接從數據庫
-                db.collection("orders").get().then((querySnapshot) => {
-                    const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-                        .sort((a, b) => b.timestamp - a.timestamp);
-                    
-                    // 創建工作表
-                    const ws = XLSX.utils.aoa_to_sheet([
-                        ["No.", "已繳費", "姓名", "餐點", "價格", "訂購時間", "備註"]
-                    ]);
-                    
-                    // 添加數據行
-                    orders.forEach((order, index) => {
-                        const orderDate = new Date(order.timestamp);
-                        const dateTimeString = orderDate.toLocaleString('zh-TW', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        });
-                        
-                        // 使用 "已繳費" 或 "未繳費" 文字
-                        const paidStatus = order.isPaid ? "已繳費" : "未繳費";
-                        
-                        // 往工作表添加一行
-                        XLSX.utils.sheet_add_aoa(ws, [[
-                            index + 1,
-                            paidStatus,
-                            order.name,
-                            order.meal,
-                            `$${order.price.toFixed(2)}`,
-                            dateTimeString,
-                            order.note
-                        ]], { origin: -1 });
-                        
-                        // 獲取當前行號
-                        const rowIndex = index + 2; // 加2是因為標題行(1)和基於0的索引
-                        
-                        // 為"已繳費"單元格添加樣式
-                        const cellRef = XLSX.utils.encode_cell({r: rowIndex-1, c: 1}); // B列
-                        if (!ws['!cols']) ws['!cols'] = [];
-                        if (!ws['!rows']) ws['!rows'] = [];
-                        
-                        // 設置顏色
-                        if (!ws[cellRef].s) ws[cellRef].s = {};
-                        ws[cellRef].s = {
-                            font: {
-                                color: { rgb: order.isPaid ? "0000FF" : "FF0000" } // 藍色或紅色
-                            }
-                        };
-                    });
-                    
-                    // 創建工作簿
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "訂單列表");
-                    
-                    // 設置列寬
-                    ws['!cols'] = [
-                        { wch: 5 },   // No.
-                        { wch: 8 },   // 已繳費
-                        { wch: 10 },  // 姓名
-                        { wch: 15 },  // 餐點
-                        { wch: 10 },  // 價格
-                        { wch: 18 },  // 訂購時間
-                        { wch: 20 }   // 備註
-                    ];
-                    
-                    // 生成檔案名稱
-                    const currentDate = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
-                    const fileName = `訂單_${currentDate}.xlsx`;
-                    
-                    // 導出為XLSX
-                    XLSX.writeFile(wb, fileName);
-                }).catch((error) => {
-                    console.error("導出訂單時出錯: ", error);
-                    alert("導出訂單失敗，請稍後再試。");
-                });
-            };
             
-            script.onerror = function() {
-                alert("無法載入Excel導出工具，請檢查網絡連接。");
-            };
-            
-            document.head.appendChild(script);
+            document.getElementById('totalPrice').innerHTML = `
+                <i class="fas fa-coins"></i> 總價格: <span style="color: var(--secondary-color); font-size: 1.2em;">${totalPrice.toFixed(2)}</span>
+            `;
         }
-
-        document.getElementById('exportButton').addEventListener('click', exportToExcel);
-        document.getElementById('clearButton').addEventListener('click', clearAllOrders);
-        document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
-
-        // 清除所有訂單
-        function clearAllOrders() {
-            if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
-                db.collection("orders").get().then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        doc.ref.delete();
-                    });
-                }).catch((error) => {
-                    console.error("清除訂單時出錯: ", error);
-                });
-            }
-        }
-
-        // 刪除選取的訂單
-        function deleteSelectedOrders() {
-            const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
-            if (checkboxes.length === 0) {
-                alert('請先選擇要刪除的訂單');
-                return;
-            }
-            if (confirm(`確定要刪除選中的 ${checkboxes.length} 筆訂單嗎？`)) {
-                checkboxes.forEach((checkbox) => {
-                    const orderId = checkbox.getAttribute('data-id');
-                    db.collection("orders").doc(orderId).delete().catch((error) => {
-                        console.error("刪除訂單時出錯: ", error);
-                    });
-                });
-            }
-        }
-
-        document.getElementById('changeImageButton').addEventListener('click', function() {
-            document.getElementById('fileInput').click();
-        });
-
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const storageRef = storage.ref(`menu/${file.name}`);
-                storageRef.put(file).then(() => {
-                    alert('圖片上傳成功！');
-                    loadMenuImage();
-                }).catch((error) => {
-                    console.error("圖片上傳失敗: ", error);
-                });
-            }
-        });
-
-        // 新增：放大鏡效果 - 當滑鼠移動至菜單區域時，以滑鼠為圓心、半徑 120px 的區域內放大 4 倍
-        const magnifier = document.getElementById('magnifier');
-        const menuImage = document.getElementById('menuImage');
-        const menuImageContainer = document.querySelector('.menu-image');
-
-        menuImageContainer.addEventListener('mousemove', function (e) {
-            const rect = menuImage.getBoundingClientRect();
-            // 取得滑鼠相對於圖片的座標
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            // 顯示放大鏡
-            magnifier.style.display = "block";
-
-            // 以滑鼠為中心，定位放大鏡（放大鏡尺寸為 240px x 240px）
-            let magnifierX = x - magnifier.offsetWidth / 2;
-            let magnifierY = y - magnifier.offsetHeight / 2;
-            magnifier.style.left = magnifierX + "px";
-            magnifier.style.top = magnifierY + "px";
-
-            // 設定放大鏡背景為當前圖片，並以 4 倍放大
-            magnifier.style.backgroundImage = `url('${menuImage.src}')`;
-            magnifier.style.backgroundSize = (menuImage.width * 4) + "px " + (menuImage.height * 4) + "px";
-
-            // 計算背景位置，使得滑鼠所在處的區域置中於放大鏡內
-            const bgX = -x * 4 + magnifier.offsetWidth / 2;
-            const bgY = -y * 4 + magnifier.offsetHeight / 2;
-            magnifier.style.backgroundPosition = `${bgX}px ${bgY}px`;
-        });
-
-        menuImageContainer.addEventListener('mouseleave', function () {
-            magnifier.style.display = "none";
-        });
-
-        // 新增：刪除菜單功能
-
-        // 當點擊「刪除菜單」按鈕時，顯示或隱藏下拉選單，並載入 Storage 中的菜單檔案列表
-        document.getElementById('deleteMenuButton').addEventListener('click', function() {
-            const deleteSelector = document.getElementById('deleteMenuSelector');
-            if (deleteSelector.style.display === "none" || deleteSelector.style.display === "") {
-                deleteSelector.style.display = "block";
-                loadDeleteMenuList();
-            } else {
-                deleteSelector.style.display = "none";
-            }
-        });
-
-        // 載入 Firebase Storage 中 menu 資料夾內所有檔案，並填入刪除用下拉式選單
-        function loadDeleteMenuList() {
-            const deleteSelector = document.getElementById('deleteMenuSelector');
-            deleteSelector.innerHTML = '<option value="">選擇要刪除的菜單</option>';
-            storage.ref('menu').listAll().then((result) => {
-                result.items.forEach((imageRef) => {
-                    const option = document.createElement('option');
-                    // 儲存檔案名稱作為 value
-                    option.value = imageRef.name;
-                    option.textContent = imageRef.name;
-                    deleteSelector.appendChild(option);
-                });
-            }).catch((error) => {
-                console.error("取得菜單列表時發生錯誤: ", error);
-            });
-        }
-
-        // 當使用者從下拉式選單中選擇檔案後，詢問是否刪除該菜單
-        document.getElementById('deleteMenuSelector').addEventListener('change', function() {
-            const fileName = this.value;
-            if (!fileName) return;
-            if (confirm("確定要刪除 " + fileName + " 這個菜單嗎？")) {
-                const fileRef = storage.ref('menu/' + fileName);
-                fileRef.delete().then(() => {
-                    alert("菜單 " + fileName + " 已成功刪除！");
-                    // 重新載入刪除與上傳下拉選單
-                    loadDeleteMenuList();
-                    loadMenuImage();
-                }).catch((error) => {
-                    console.error("刪除菜單時發生錯誤: ", error);
-                    alert("刪除失敗，請稍後再試。");
-                });
-            }
-        });
-    </script>
-</body>
-
-</html>
