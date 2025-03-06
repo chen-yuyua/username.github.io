@@ -791,7 +791,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
     <script>
-        // Firebase 初始化
+        // Firebase 初始化 - 使用原有的設定，確保連接正確
         const firebaseConfig = {
             apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
             authDomain: "lunch-order-2f467.firebaseapp.com",
@@ -971,8 +971,8 @@
             `;
 
             row.querySelector('.paid-status').addEventListener('click', function (e) {
-                const orderId = e.target.closest('.paid-status').getAttribute('data-id');
-                const isPaid = e.target.closest('.paid-status').classList.contains('blue-circle');
+                const orderId = this.getAttribute('data-id');
+                const isPaid = this.classList.contains('blue-circle');
                 if (confirm(`確定要將此訂單狀態變更為${isPaid ? '未繳費' : '已繳費'}嗎？`)) {
                     updatePaidStatus(orderId, isPaid);
                 }
@@ -986,10 +986,8 @@
                 // 確保只有實際訂單行（有價格欄位）才被計算
                 if (row.cells.length >= 6) {
                     const priceText = row.cells[5].textContent;
-                    if (priceText && priceText.includes('
-            )) {
-                        const price = parseFloat(priceText.replace('
-            , ''));
+                    if (priceText && priceText.includes(')) {
+                        const price = parseFloat(priceText.replace(', ''));
                         return sum + (isNaN(price) ? 0 : price);
                     }
                 }
@@ -999,4 +997,217 @@
             document.getElementById('totalPrice').innerHTML = `
                 <i class="fas fa-coins"></i> 總價格: <span style="color: var(--secondary-color); font-size: 1.2em;">${totalPrice.toFixed(2)}</span>
             `;
+        }
+
+        // 更換菜單圖片 (需輸入密碼驗證)
+        function changeImage(event) {
+            const selectedValue = event.target.value;
+            if (!selectedValue) return;
+            
+            const password = prompt('請輸入密碼以更換圖片：');
+            if (password === '0841') {
+                const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
+                if (confirmChange) {
+                    showLoader();
+                    db.collection("images").doc("menuImage").set({ url: selectedValue })
+                    .then(() => {
+                        document.getElementById('menuImage').src = selectedValue;
+                        hideLoader();
+                        showToast('菜單已成功更新！', 'success');
+                    })
+                    .catch((error) => {
+                        console.error("更新圖片時出錯: ", error);
+                        hideLoader();
+                        showToast('更新菜單失敗，請稍後再試。', 'error');
+                        event.target.value = '';
+                    });
+                } else {
+                    event.target.value = '';
+                }
+            } else {
+                showToast('密碼錯誤，無法更換圖片。', 'error');
+                event.target.value = '';
+            }
+        }
+
+        // 讀取目前菜單圖片與 Storage 中的菜單檔案列表
+        function loadMenuImage() {
+            showLoader();
+            // 讀取當前顯示的菜單
+            db.collection("images").doc("menuImage").get()
+            .then((doc) => {
+                if (doc.exists && doc.data().url) {
+                    document.getElementById('menuImage').src = doc.data().url;
+                    document.getElementById('imageSelector').value = doc.data().url;
+                } else {
+                    document.getElementById('menuImage').src = 'https://via.placeholder.com/400x300?text=尚未上傳菜單';
+                }
+
+                // 載入可用菜單列表
+                return storage.ref('menu').listAll();
+            })
+            .then((result) => {
+                const selector = document.getElementById('imageSelector');
+                selector.innerHTML = '<option value="">請選擇菜單</option>';
+                
+                result.items.forEach((imageRef) => {
+                    imageRef.getDownloadURL().then((url) => {
+                        const option = document.createElement('option');
+                        option.value = url;
+                        option.textContent = imageRef.name;
+                        selector.appendChild(option);
+                    });
+                });
+                hideLoader();
+            })
+            .catch((error) => {
+                console.error("載入菜單時出錯: ", error);
+                hideLoader();
+                showToast('載入菜單失敗，請稍後再試。', 'error');
+            });
+        }
+
+        // 載入刪除菜單下拉式選單
+        function loadDeleteMenuList() {
+            showLoader();
+            const deleteSelector = document.getElementById('deleteMenuSelector');
+            deleteSelector.innerHTML = '<option value="">請選擇要刪除的菜單</option>';
+            
+            storage.ref('menu').listAll()
+            .then((result) => {
+                result.items.forEach((imageRef) => {
+                    const option = document.createElement('option');
+                    option.value = imageRef.name;
+                    option.textContent = imageRef.name;
+                    deleteSelector.appendChild(option);
+                });
+                hideLoader();
+            })
+            .catch((error) => {
+                console.error("載入菜單列表時出錯: ", error);
+                hideLoader();
+                showToast('載入菜單列表失敗，請稍後再試。', 'error');
+            });
+        }
+
+        // 初始化頁面並啟動資料載入
+        updateDateTime();
+        loadOrdersFromDatabase();
+        loadMenuImage();
+        setInterval(updateDateTime, 1000);
+
+        // 表單提交事件處理
+        document.getElementById('orderForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            
+            const name = this.elements['name'].value.trim();
+            const meal = this.elements['meal'].value.trim();
+            const price = parseFloat(this.elements['price'].value);
+            const note = this.elements['note'].value.trim();
+            const timestamp = Date.now();
+            const isPaid = false;
+            
+            if (name && meal && !isNaN(price) && price > 0) {
+                addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
+            } else {
+                showToast('請填寫有效的訂單資訊。', 'warning');
+            }
+        });
+
+        // 導出訂單為 Excel 檔案 (XLSX格式，支援顏色)
+        function exportToExcel() {
+            showLoader();
+            // 先加載 SheetJS 庫
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+            script.onload = function() {
+                // 獲取所有訂單數據直接從數據庫
+                db.collection("orders").get().then((querySnapshot) => {
+                    const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                        .sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    // 創建工作表
+                    const ws = XLSX.utils.aoa_to_sheet([
+                        ["No.", "已繳費", "姓名", "餐點", "價格", "訂購時間", "備註"]
+                    ]);
+                    
+                    // 添加數據行
+                    orders.forEach((order, index) => {
+                        const orderDate = new Date(order.timestamp);
+                        const dateTimeString = orderDate.toLocaleString('zh-TW', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                        
+                        // 使用 "已繳費" 或 "未繳費" 文字
+                        const paidStatus = order.isPaid ? "已繳費" : "未繳費";
+                        
+                        // 往工作表添加一行
+                        XLSX.utils.sheet_add_aoa(ws, [[
+                            index + 1,
+                            paidStatus,
+                            order.name,
+                            order.meal,
+                            `${order.price.toFixed(2)}`,
+                            dateTimeString,
+                            order.note || '無'
+                        ]], { origin: -1 });
+                        
+                        // 獲取當前行號
+                        const rowIndex = index + 2; // 加2是因為標題行(1)和基於0的索引
+                        
+                        // 為"已繳費"單元格添加樣式
+                        const cellRef = XLSX.utils.encode_cell({r: rowIndex-1, c: 1}); // B列
+                        if (!ws['!cols']) ws['!cols'] = [];
+                        if (!ws['!rows']) ws['!rows'] = [];
+                        
+                        // 設置顏色
+                        if (!ws[cellRef].s) ws[cellRef].s = {};
+                        ws[cellRef].s = {
+                            font: {
+                                color: { rgb: order.isPaid ? "0000FF" : "FF0000" } // 藍色或紅色
+                            }
+                        };
+                    });
+                    
+                    // 創建工作簿
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "訂單列表");
+                    
+                    // 設置列寬
+                    ws['!cols'] = [
+                        { wch: 5 },   // No.
+                        { wch: 8 },   // 已繳費
+                        { wch: 10 },  // 姓名
+                        { wch: 15 },  // 餐點
+                        { wch: 10 },  // 價格
+                        { wch: 18 },  // 訂購時間
+                        { wch: 20 }   // 備註
+                    ];
+                    
+                    // 生成檔案名稱
+                    const currentDate = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
+                    const fileName = `訂單_${currentDate}.xlsx`;
+                    
+                    // 導出為XLSX
+                    XLSX.writeFile(wb, fileName);
+                    hideLoader();
+                    showToast('訂單已成功導出為Excel檔案！', 'success');
+                }).catch((error) => {
+                    console.error("導出訂單時出錯: ", error);
+                    hideLoader();
+                    showToast('導出訂單失敗，請稍後再試。', 'error');
+                });
+            };
+            
+            script.onerror = function() {
+                hideLoader();
+                showToast('無法載入Excel導出工具，請檢查網絡連接。', 'error');
+            };
+            
+            document.head.appendChild(script);
         }
