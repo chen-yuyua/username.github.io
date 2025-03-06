@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>設計分室午餐點餐系統 Ver1.3</title>
+    <title>設計分室午餐點餐系統 Ver2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -422,7 +422,6 @@
             text-align: right;
             font-weight: bold;
             font-size: 1.3rem;
-            margin: 1.5rem 0;
             color: var(--primary-color);
             background-color: white;
             padding: 1rem;
@@ -536,7 +535,7 @@
     <div class="container">
         <div class="header">
             <h1>設計分室午餐點餐系統</h1>
-            <span class="version-badge">Ver 1.3</span>
+            <span class="version-badge">Ver 2.0</span>
             <div id="datetime"></div>
         </div>
 
@@ -618,6 +617,7 @@
         <div class="orders-section">
             <div class="section-header">
                 <h2 class="section-title">今日訂單</h2>
+                <div id="totalPrice">總價格: $0.00</div>
             </div>
             <div class="table-container">
                 <table id="orderTable">
@@ -636,7 +636,6 @@
                     <tbody></tbody>
                 </table>
             </div>
-            <div id="totalPrice">總價格: $0.00</div>
             <div class="button-group">
                 <button id="exportButton" class="btn btn-primary">
                     <i class="fas fa-file-export"></i> 導出訂單為 Excel
@@ -660,288 +659,561 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-storage-compat.js"></script>
     <script>
-        // Firebase 初始化 - 使用原有的連接設定
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
-            authDomain: "lunch-order-2f467.firebaseapp.com",
-            projectId: "lunch-order-2f467",
-            storageBucket: "lunch-order-2f467.appspot.com",
-            messagingSenderId: "38416716299",
-            appId: "1:38416716299:web:f36fae2c1eb80d615bed0e"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+        // 確保所有 DOM 元素載入完成後再執行腳本
+        document.addEventListener('DOMContentLoaded', function() {
+            // Firebase 初始化
+            const firebaseConfig = {
+                apiKey: "AIzaSyAsn5XFM6wnGp75BbgCeEpEbdgwH5Eu4o",
+                authDomain: "lunch-order-2f467.firebaseapp.com",
+                projectId: "lunch-order-2f467",
+                storageBucket: "lunch-order-2f467.appspot.com",
+                messagingSenderId: "38416716299",
+                appId: "1:38416716299:web:f36fae2c1eb80d615bed0e"
+            };
 
-        // 更新頁面日期與時間
-        function updateDateTime() {
-            const now = new Date();
-            const dateTimeString = now.toLocaleString('zh-TW', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-            document.getElementById('datetime').textContent = dateTimeString;
-        }
+            // 初始化 Firebase
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const storage = firebase.storage();
 
-        // 新增訂單至資料庫
-        function addOrderToDatabase(order) {
-            db.collection("orders").add(order).then(() => {
-                document.getElementById('orderForm').reset();
-            }).catch((error) => {
-                console.error("Error adding order: ", error);
-                alert("新增訂單失敗，請稍後再試。");
-            });
-        }
-
-        // 監聽訂單資料，並即時更新訂單列表與總金額
-        function loadOrdersFromDatabase() {
-            db.collection("orders").onSnapshot((querySnapshot) => {
-                const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => b.timestamp - a.timestamp);
-                const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = '';
-                orders.forEach((order, index) => appendOrderToTable(order, index));
-                updateTotalPrice();
-            }, (error) => {
-                console.error("Error loading orders: ", error);
-                alert("載入訂單時發生錯誤");
-            });
-        }
-
-        // 更新付款狀態
-        function updatePaidStatus(orderId, isPaid) {
-            db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
-            .then(() => {
-                console.log("付款狀態已成功更新");
-            })
-            .catch((error) => {
-                console.error("更新付款狀態時出錯: ", error);
-                alert("更新付款狀態失敗，請稍後再試。");
-            });
-        }
-
-        // 將訂單資料加入表格中
-        function appendOrderToTable(order, index) {
-            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-            const row = tbody.insertRow();
-            const orderDate = new Date(order.timestamp);
-            const dateTimeString = orderDate.toLocaleString('zh-TW', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-
-            row.innerHTML = `
-                <td class="checkbox-center"><input type="checkbox" data-id="${order.id}" /></td>
-                <td>${index + 1}</td>
-                <td class="checkbox-center"><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}" data-id="${order.id}">${order.isPaid ? '●' : '●'}</span></td>
-                <td>${order.name}</td>
-                <td>${order.meal}</td>
-                <td>$${order.price.toFixed(2)}</td>
-                <td>${dateTimeString}</td>
-                <td>${order.note || ''}</td>
-            `;
-
-            row.querySelector('.paid-status').addEventListener('click', function (e) {
-                const orderId = this.getAttribute('data-id');
-                const isPaid = this.classList.contains('blue-circle');
-                if (confirm('是否要變更付款狀態？')) {
-                    updatePaidStatus(orderId, isPaid);
-                }
-            });
-        }
-
-        // 計算所有訂單的總價格
-        function updateTotalPrice() {
-            const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
-            let totalPrice = Array.from(tbody.rows).reduce((sum, row) => {
-                const price = parseFloat(row.cells[5].textContent.replace('$', ''));
-                return sum + price;
-            }, 0);
-            document.getElementById('totalPrice').textContent = `總價格: $${totalPrice.toFixed(2)}`;
-        }
-
-        // 更換菜單圖片 (需輸入密碼驗證)
-        function changeImage(event) {
-            const password = prompt('請輸密碼以更換圖片：');
-            if (password === '0841') {
-                const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
-                if (confirmChange) {
-                    db.collection("images").doc("menuImage").set({ url: event.target.value }).then(() => {
-                        document.getElementById('menuImage').src = event.target.value;
-                    }).catch((error) => {
-                        console.error("Error updating image URL: ", error);
-                        alert("更新菜單圖片失敗，請稍後再試。");
-                    });
-                } else {
-                    event.target.value = '';
-                }
-            } else {
-                alert('密碼錯誤，無法更換圖片。');
-                event.target.value = '';
+            // 更新頁面日期與時間
+            function updateDateTime() {
+                const now = new Date();
+                const dateTimeString = now.toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                document.getElementById('datetime').textContent = dateTimeString;
             }
-        }
 
-        document.getElementById('imageSelector').addEventListener('change', changeImage);
-
-        // 讀取目前菜單圖片與 Storage 中的菜單檔案列表
-        function loadMenuImage() {
-            db.collection("images").doc("menuImage").get().then((doc) => {
-                if (doc.exists) {
-                    document.getElementById('menuImage').src = doc.data().url;
-                    document.getElementById('imageSelector').value = doc.data().url;
-                }
-            }).catch((error) => {
-                console.error("Error loading menu image: ", error);
-                alert("載入菜單圖片失敗");
-            });
-
-            storage.ref('menu').listAll().then((result) => {
-                const selector = document.getElementById('imageSelector');
-                selector.innerHTML = '<option value="">選擇圖片</option>';
-                result.items.forEach((imageRef) => {
-                    imageRef.getDownloadURL().then((url) => {
-                        const option = document.createElement('option');
-                        option.value = url;
-                        option.textContent = imageRef.name;
-                        selector.appendChild(option);
-                    });
+            // 新增訂單至資料庫
+            function addOrderToDatabase(order) {
+                db.collection("orders").add(order)
+                .then(() => {
+                    document.getElementById('orderForm').reset();
+                    alert('訂單已成功提交！');
+                })
+                .catch((error) => {
+                    console.error("Error adding order: ", error);
+                    alert("新增訂單失敗，請稍後再試。");
                 });
-            }).catch((error) => {
-                console.error("Error loading images: ", error);
-                alert("載入菜單列表失敗");
-            });
-        }
+            }
 
-        // 載入刪除菜單下拉式選單
-        function loadDeleteMenuList() {
-            const deleteSelector = document.getElementById('deleteMenuSelector');
-            deleteSelector.innerHTML = '<option value="">選擇要刪除的菜單</option>';
-            
-            storage.ref('menu').listAll().then((result) => {
-                result.items.forEach((imageRef) => {
-                    const option = document.createElement('option');
-                    option.value = imageRef.name;
-                    option.textContent = imageRef.name;
-                    deleteSelector.appendChild(option);
-                });
-            }).catch((error) => {
-                console.error("取得菜單列表時發生錯誤: ", error);
-                alert("載入菜單列表失敗");
-            });
-        }
-
-        updateDateTime();
-        loadOrdersFromDatabase();
-        loadMenuImage();
-        setInterval(updateDateTime, 60000);
-
-        document.getElementById('orderForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const name = this.elements['name'].value;
-            const meal = this.elements['meal'].value;
-            const price = parseFloat(this.elements['price'].value);
-            const note = this.elements['note'].value;
-            const timestamp = Date.now();
-            const isPaid = false;
-            addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
-        });
-
-        // 導出訂單為 Excel 檔案 (XLSX格式，支援顏色)
-        function exportToExcel() {
-            // 先加載 SheetJS 庫
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-            script.onload = function() {
-                // 獲取所有訂單數據直接從數據庫
-                db.collection("orders").get().then((querySnapshot) => {
-                    const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+            // 監聽訂單資料，並即時更新訂單列表與總金額
+            function loadOrdersFromDatabase() {
+                db.collection("orders").onSnapshot((querySnapshot) => {
+                    const orders = querySnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
                         .sort((a, b) => b.timestamp - a.timestamp);
                     
-                    // 創建工作表
-                    const ws = XLSX.utils.aoa_to_sheet([
-                        ["No.", "已繳費", "姓名", "餐點", "價格", "訂購時間", "備註"]
-                    ]);
+                    const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+                    tbody.innerHTML = '';
                     
-                    // 添加數據行
-                    orders.forEach((order, index) => {
-                        const orderDate = new Date(order.timestamp);
-                        const dateTimeString = orderDate.toLocaleString('zh-TW', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
+                    if (orders.length === 0) {
+                        const emptyRow = tbody.insertRow();
+                        const emptyCell = emptyRow.insertCell();
+                        emptyCell.colSpan = 8;
+                        emptyCell.style.textAlign = 'center';
+                        emptyCell.style.padding = '2rem';
+                        emptyCell.innerHTML = '<i class="fas fa-info-circle"></i> 目前尚無訂單';
+                    } else {
+                        orders.forEach((order, index) => appendOrderToTable(order, index));
+                    }
+                    
+                    updateTotalPrice();
+                }, (error) => {
+                    console.error("Error loading orders: ", error);
+                    alert("載入訂單時發生錯誤");
+                });
+            }
+
+            // 更新付款狀態
+            function updatePaidStatus(orderId, isPaid) {
+                db.collection("orders").doc(orderId).update({ isPaid: !isPaid })
+                .then(() => {
+                    console.log("付款狀態已成功更新");
+                })
+                .catch((error) => {
+                    console.error("更新付款狀態時出錯: ", error);
+                    alert("更新付款狀態失敗，請稍後再試。");
+                });
+            }
+
+            // 將訂單資料加入表格中
+            function appendOrderToTable(order, index) {
+                const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+                const row = tbody.insertRow();
+                const orderDate = new Date(order.timestamp);
+                const dateTimeString = orderDate.toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
+                row.innerHTML = `
+                    <td class="checkbox-center"><input type="checkbox" data-id="${order.id}" /></td>
+                    <td>${index + 1}</td>
+                    <td class="checkbox-center"><span class="paid-status ${order.isPaid ? 'blue-circle' : 'red-circle'}" data-id="${order.id}">${order.isPaid ? '●' : '●'}</span></td>
+                    <td>${order.name}</td>
+                    <td>${order.meal}</td>
+                    <td>$${order.price.toFixed(2)}</td>
+                    <td>${dateTimeString}</td>
+                    <td>${order.note || ''}</td>
+                `;
+
+                const paidStatusBtn = row.querySelector('.paid-status');
+                paidStatusBtn.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-id');
+                    const isPaid = this.classList.contains('blue-circle');
+                    if (confirm('是否要變更付款狀態？')) {
+                        updatePaidStatus(orderId, isPaid);
+                    }
+                });
+            }
+
+            // 計算所有訂單的總價格
+            function updateTotalPrice() {
+                const tbody = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+                let totalPrice = 0;
+                
+                // 檢查是否有實際的訂單行
+                const rows = tbody.rows;
+                if (rows.length > 0 && rows[0].cells.length > 5) {
+                    totalPrice = Array.from(rows).reduce((sum, row) => {
+                        // 確保這是一個訂單行而不是空訊息行
+                        if (row.cells.length > 5 && row.cells[5].textContent.includes('$')) {
+                            const price = parseFloat(row.cells[5].textContent.replace('$', ''));
+                            return sum + (isNaN(price) ? 0 : price);
+                        }
+                        return sum;
+                    }, 0);
+                }
+                
+                document.getElementById('totalPrice').innerHTML = `
+                    <i class="fas fa-coins"></i> 總價格: <span style="color: var(--secondary-color); font-size: 1.2em;">$${totalPrice.toFixed(2)}</span>
+                `;
+            }
+
+            // 更換菜單圖片 (需輸入密碼驗證)
+            function changeImage(event) {
+                const selectedValue = event.target.value;
+                if (!selectedValue) return;
+                
+                const password = prompt('請輸入密碼以更換圖片：');
+                if (password === '0841') {
+                    const confirmChange = confirm(`確定要更換為選擇的圖片嗎？`);
+                    if (confirmChange) {
+                        db.collection("images").doc("menuImage").set({ url: selectedValue })
+                        .then(() => {
+                            document.getElementById('menuImage').src = selectedValue;
+                            alert('菜單已成功更新！');
+                        })
+                        .catch((error) => {
+                            console.error("Error updating image URL: ", error);
+                            alert("更新菜單圖片失敗，請稍後再試。");
+                            event.target.value = '';
+                        });
+                    } else {
+                        event.target.value = '';
+                    }
+                } else {
+                    alert('密碼錯誤，無法更換圖片。');
+                    event.target.value = '';
+                }
+            }
+
+            // 讀取目前菜單圖片與 Storage 中的菜單檔案列表
+            function loadMenuImage() {
+                db.collection("images").doc("menuImage").get()
+                .then((doc) => {
+                    if (doc.exists && doc.data().url) {
+                        document.getElementById('menuImage').src = doc.data().url;
+                        document.getElementById('imageSelector').value = doc.data().url;
+                    } else {
+                        document.getElementById('menuImage').src = 'https://via.placeholder.com/400x300?text=尚未上傳菜單';
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error loading menu image: ", error);
+                    alert("載入菜單圖片失敗");
+                });
+
+                storage.ref('menu').listAll()
+                .then((result) => {
+                    const selector = document.getElementById('imageSelector');
+                    selector.innerHTML = '<option value="">選擇圖片</option>';
+                    result.items.forEach((imageRef) => {
+                        imageRef.getDownloadURL().then((url) => {
+                            const option = document.createElement('option');
+                            option.value = url;
+                            option.textContent = imageRef.name;
+                            selector.appendChild(option);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error loading images: ", error);
+                    alert("載入菜單列表失敗");
+                });
+            }
+
+            // 載入刪除菜單下拉式選單
+            function loadDeleteMenuList() {
+                const deleteSelector = document.getElementById('deleteMenuSelector');
+                deleteSelector.innerHTML = '<option value="">選擇要刪除的菜單</option>';
+                
+                storage.ref('menu').listAll()
+                .then((result) => {
+                    result.items.forEach((imageRef) => {
+                        const option = document.createElement('option');
+                        option.value = imageRef.name;
+                        option.textContent = imageRef.name;
+                        deleteSelector.appendChild(option);
+                    });
+                })
+                .catch((error) => {
+                    console.error("取得菜單列表時發生錯誤: ", error);
+                    alert("載入菜單列表失敗");
+                });
+            }
+
+            // 導出訂單為 Excel 檔案 (XLSX格式，支援顏色)
+            function exportToExcel() {
+                // 先加載 SheetJS 庫
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                script.onload = function() {
+                    // 獲取所有訂單數據直接從數據庫
+                    db.collection("orders").get().then((querySnapshot) => {
+                        const orders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                            .sort((a, b) => b.timestamp - a.timestamp);
+                        
+                        // 創建工作表
+                        const ws = XLSX.utils.aoa_to_sheet([
+                            ["No.", "已繳費", "姓名", "餐點", "價格", "訂購時間", "備註"]
+                        ]);
+                        
+                        // 添加數據行
+                        orders.forEach((order, index) => {
+                            const orderDate = new Date(order.timestamp);
+                            const dateTimeString = orderDate.toLocaleString('zh-TW', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            });
+                            
+                            // 使用 "已繳費" 或 "未繳費" 文字
+                            const paidStatus = order.isPaid ? "已繳費" : "未繳費";
+                            
+                            // 往工作表添加一行
+                            XLSX.utils.sheet_add_aoa(ws, [[
+                                index + 1,
+                                paidStatus,
+                                order.name,
+                                order.meal,
+                                `${order.price.toFixed(2)}`,
+                                dateTimeString,
+                                order.note || ''
+                            ]], { origin: -1 });
+                            
+                            // 獲取當前行號
+                            const rowIndex = index + 2; // 加2是因為標題行(1)和基於0的索引
+                            
+                            // 為"已繳費"單元格添加樣式
+                            const cellRef = XLSX.utils.encode_cell({r: rowIndex-1, c: 1}); // B列
+                            if (!ws['!cols']) ws['!cols'] = [];
+                            if (!ws['!rows']) ws['!rows'] = [];
+                            
+                            // 設置顏色
+                            if (!ws[cellRef].s) ws[cellRef].s = {};
+                            ws[cellRef].s = {
+                                font: {
+                                    color: { rgb: order.isPaid ? "0000FF" : "FF0000" } // 藍色或紅色
+                                }
+                            };
                         });
                         
-                        // 使用 "已繳費" 或 "未繳費" 文字
-                        const paidStatus = order.isPaid ? "已繳費" : "未繳費";
+                        // 創建工作簿
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "訂單列表");
                         
-                        // 往工作表添加一行
-                        XLSX.utils.sheet_add_aoa(ws, [[
-                            index + 1,
-                            paidStatus,
-                            order.name,
-                            order.meal,
-                            `${order.price.toFixed(2)}`,
-                            dateTimeString,
-                            order.note || ''
-                        ]], { origin: -1 });
+                        // 設置列寬
+                        ws['!cols'] = [
+                            { wch: 5 },   // No.
+                            { wch: 8 },   // 已繳費
+                            { wch: 10 },  // 姓名
+                            { wch: 15 },  // 餐點
+                            { wch: 10 },  // 價格
+                            { wch: 18 },  // 訂購時間
+                            { wch: 20 }   // 備註
+                        ];
                         
-                        // 獲取當前行號
-                        const rowIndex = index + 2; // 加2是因為標題行(1)和基於0的索引
+                        // 生成檔案名稱
+                        const currentDate = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
+                        const fileName = `訂單_${currentDate}.xlsx`;
                         
-                        // 為"已繳費"單元格添加樣式
-                        const cellRef = XLSX.utils.encode_cell({r: rowIndex-1, c: 1}); // B列
-                        if (!ws['!cols']) ws['!cols'] = [];
-                        if (!ws['!rows']) ws['!rows'] = [];
-                        
-                        // 設置顏色
-                        if (!ws[cellRef].s) ws[cellRef].s = {};
-                        ws[cellRef].s = {
-                            font: {
-                                color: { rgb: order.isPaid ? "0000FF" : "FF0000" } // 藍色或紅色
-                            }
-                        };
+                        // 導出為XLSX
+                        XLSX.writeFile(wb, fileName);
+                        alert('訂單已成功導出為Excel檔案！');
+                    }).catch((error) => {
+                        console.error("導出訂單時出錯: ", error);
+                        alert("導出訂單失敗，請稍後再試。");
                     });
-                    
-                    // 創建工作簿
-                    const wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, "訂單列表");
-                    
-                    // 設置列寬
-                    ws['!cols'] = [
-                        { wch: 5 },   // No.
-                        { wch: 8 },   // 已繳費
-                        { wch: 10 },  // 姓名
-                        { wch: 15 },  // 餐點
-                        { wch: 10 },  // 價格
-                        { wch: 18 },  // 訂購時間
-                        { wch: 20 }   // 備註
-                    ];
-                    
-                    // 生成檔案名稱
-                    const currentDate = new Date().toLocaleDateString('zh-TW').replace(/\//g, '-');
-                    const fileName = `訂單_${currentDate}.xlsx`;
-                    
-                    // 導出為XLSX
-                    XLSX.writeFile(wb, fileName);
-                }).catch((error) => {
-                    console.error("導出訂單時出錯: ", error);
-                    alert("導出訂單失敗，請稍後再試。");
+                };
+                
+                script.onerror = function() {
+                    alert("無法載入Excel導出工具，請檢查網絡連接。");
+                };
+                
+                document.head.appendChild(script);
+            }
+
+            // 清除所有訂單
+            function clearAllOrders() {
+                if (confirm('確定要清除所有訂單嗎？此操作無法撤銷。')) {
+                    db.collection("orders").get().then((querySnapshot) => {
+                        querySnapshot.forEach((doc) => {
+                            doc.ref.delete();
+                        });
+                        alert('所有訂單已成功清除！');
+                    }).catch((error) => {
+                        console.error("清除訂單時出錯: ", error);
+                        alert("清除訂單失敗，請稍後再試。");
+                    });
+                }
+            }
+
+            // 刪除選取的訂單
+            function deleteSelectedOrders() {
+                const checkboxes = document.querySelectorAll('#orderTable input[type="checkbox"]:checked');
+                if (checkboxes.length === 0) {
+                    alert('請先選擇要刪除的訂單');
+                    return;
+                }
+                if (confirm(`確定要刪除選中的 ${checkboxes.length} 筆訂單嗎？`)) {
+                    let deleteCount = 0;
+                    checkboxes.forEach((checkbox) => {
+                        const orderId = checkbox.getAttribute('data-id');
+                        db.collection("orders").doc(orderId).delete()
+                        .then(() => {
+                            deleteCount++;
+                            if (deleteCount === checkboxes.length) {
+                                alert(`已成功刪除 ${deleteCount} 筆訂單！`);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("刪除訂單時出錯: ", error);
+                            alert("刪除訂單失敗，請稍後再試。");
+                        });
+                    });
+                }
+            }
+
+            // 菜單圖片放大鏡效果
+            function setupMagnifier() {
+                const magnifier = document.getElementById('magnifier');
+                const menuImage = document.getElementById('menuImage');
+                const menuImageContainer = document.querySelector('.menu-image');
+
+                menuImageContainer.addEventListener('mousemove', function (e) {
+                    const rect = menuImage.getBoundingClientRect();
+                    // 取得滑鼠相對於圖片的座標
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    // 確保只在圖片上顯示放大鏡
+                    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                        // 顯示放大鏡
+                        magnifier.style.display = "block";
+
+                        // 以滑鼠為中心，定位放大鏡
+                        let magnifierX = x - magnifier.offsetWidth / 2;
+                        let magnifierY = y - magnifier.offsetHeight / 2;
+                        
+                        // 確保放大鏡不超出圖片邊緣
+                        magnifierX = Math.max(0, Math.min(magnifierX, rect.width - magnifier.offsetWidth));
+                        magnifierY = Math.max(0, Math.min(magnifierY, rect.height - magnifier.offsetHeight));
+                        
+                        magnifier.style.left = magnifierX + "px";
+                        magnifier.style.top = magnifierY + "px";
+
+                        // 設定放大鏡背景為當前圖片，並以 4 倍放大
+                        magnifier.style.backgroundImage = `url('${menuImage.src}')`;
+                        magnifier.style.backgroundSize = (menuImage.width * 4) + "px " + (menuImage.height * 4) + "px";
+
+                        // 計算背景位置，使得滑鼠所在處的區域置中於放大鏡內
+                        const bgX = -x * 4 + magnifier.offsetWidth / 2;
+                        const bgY = -y * 4 + magnifier.offsetHeight / 2;
+                        magnifier.style.backgroundPosition = `${bgX}px ${bgY}px`;
+                    } else {
+                        magnifier.style.display = "none";
+                    }
                 });
-            };
+
+                menuImageContainer.addEventListener('mouseleave', function () {
+                    magnifier.style.display = "none";
+                });
+
+                // 點擊菜單圖片時顯示模態視窗
+                menuImage.addEventListener('click', function() {
+                    if (!this.src || this.src === "" || this.src.includes("placeholder")) return;
+                    
+                    const modal = document.getElementById('imageModal');
+                    const modalImg = document.getElementById('modalImage');
+                    modal.style.display = "block";
+                    modalImg.src = this.src;
+                });
+            }
+
+            // 初始化事件監聽器
+            function initEventListeners() {
+                // 表單提交事件
+                document.getElementById('orderForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const name = this.elements['name'].value;
+                    const meal = this.elements['meal'].value;
+                    const price = parseFloat(this.elements['price'].value);
+                    const note = this.elements['note'].value;
+                    const timestamp = Date.now();
+                    const isPaid = false;
+                    addOrderToDatabase({ name, meal, price, note, timestamp, isPaid });
+                });
+
+                // 選擇菜單事件
+                document.getElementById('imageSelector').addEventListener('change', changeImage);
+
+                // 上傳菜單按鈕事件
+                document.getElementById('changeImageButton').addEventListener('click', function() {
+                    document.getElementById('fileInput').click();
+                });
+
+                // 檔案選擇事件
+                document.getElementById('fileInput').addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const password = prompt('請輸入密碼以上傳菜單圖片：');
+                        if (password === '0841') {
+                            const storageRef = storage.ref(`menu/${file.name}`);
+                            storageRef.put(file).then(() => {
+                                storageRef.getDownloadURL().then(url => {
+                                    db.collection("images").doc("menuImage").set({ url: url }).then(() => {
+                                        document.getElementById('menuImage').src = url;
+                                        alert('圖片上傳成功並已設為當前菜單！');
+                                        loadMenuImage();
+                                    });
+                                });
+                            }).catch((error) => {
+                                console.error("圖片上傳失敗: ", error);
+                                alert("上傳圖片失敗，請稍後再試。");
+                            });
+                        } else {
+                            alert('密碼錯誤，無法上傳菜單圖片。');
+                        }
+                    }
+                });
+
+                // 刪除菜單按鈕事件
+                document.getElementById('deleteMenuButton').addEventListener('click', function() {
+                    const password = prompt('請輸入密碼以刪除菜單：');
+                    if (password === '0841') {
+                        const deleteMenuSelectorContainer = document.getElementById('deleteMenuSelectorContainer');
+                        if (deleteMenuSelectorContainer.style.display === "none" || !deleteMenuSelectorContainer.style.display) {
+                            deleteMenuSelectorContainer.style.display = "block";
+                            loadDeleteMenuList();
+                        } else {
+                            deleteMenuSelectorContainer.style.display = "none";
+                        }
+                    } else {
+                        alert('密碼錯誤，無法刪除菜單。');
+                    }
+                });
+
+                // 選擇刪除菜單事件
+                document.getElementById('deleteMenuSelector').addEventListener('change', function() {
+                    const fileName = this.value;
+                    if (!fileName) return;
+                    
+                    if (confirm("確定要刪除 " + fileName + " 這個菜單嗎？")) {
+                        const fileRef = storage.ref('menu/' + fileName);
+                        
+                        // 檢查是否要刪除的是當前顯示的菜單
+                        db.collection("images").doc("menuImage").get().then((doc) => {
+                            if (doc.exists && doc.data().url) {
+                                const currentUrl = doc.data().url;
+                                
+                                // 獲取要刪除菜單的URL
+                                fileRef.getDownloadURL().then((deleteUrl) => {
+                                    // 如果刪除的是當前顯示的菜單，則清空當前菜單
+                                    if (currentUrl === deleteUrl) {
+                                        db.collection("images").doc("menuImage").set({ url: "" });
+                                    }
+                                    
+                                    // 刪除檔案
+                                    return fileRef.delete();
+                                }).then(() => {
+                                    alert("菜單 " + fileName + " 已成功刪除！");
+                                    loadDeleteMenuList();
+                                    loadMenuImage();
+                                    this.value = '';
+                                });
+                            } else {
+                                // 如果沒有當前菜單，直接刪除
+                                fileRef.delete().then(() => {
+                                    alert("菜單 " + fileName + " 已成功刪除！");
+                                    loadDeleteMenuList();
+                                    loadMenuImage();
+                                    this.value = '';
+                                });
+                            }
+                        }).catch((error) => {
+                            console.error("刪除菜單時發生錯誤: ", error);
+                            alert("刪除失敗，請稍後再試。");
+                            this.value = '';
+                        });
+                    } else {
+                        this.value = '';
+                    }
+                });
+
+                // 關閉模態視窗事件
+                document.querySelector('.close').addEventListener('click', function() {
+                    document.getElementById('imageModal').style.display = "none";
+                });
+
+                // 點擊模態視窗背景時也關閉它
+                document.getElementById('imageModal').addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.style.display = "none";
+                    }
+                });
+
+                // 導出、清除、刪除按鈕事件
+                document.getElementById('exportButton').addEventListener('click', exportToExcel);
+                document.getElementById('clearButton').addEventListener('click', clearAllOrders);
+                document.getElementById('deleteSelectedButton').addEventListener('click', deleteSelectedOrders);
+            }
+
+            // 初始化
+            updateDateTime();
+            loadOrdersFromDatabase();
+            loadMenuImage();
+            setupMagnifier();
+            initEventListeners();
             
-            script.onerror = function() {
-                alert("無法載入Excel導出工具，請檢查網絡連接。");
-            };
-            
-            document.head.appendChild(script);
-        }
+            // 定時更新日期時間
+            setInterval(updateDateTime, 60000);
+        });
+    </script>
+</body>
+
+</html>
