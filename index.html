@@ -289,19 +289,6 @@
             transition: transform var(--transition-speed);
         }
 
-        .magnifier {
-            display: none;
-            position: absolute;
-            pointer-events: none;
-            width: 240px;
-            height: 240px;
-            border: 3px solid var(--primary-color);
-            border-radius: 50%;
-            overflow: hidden;
-            box-shadow: 0 0 12px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-
         .menu-controls {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -588,7 +575,6 @@
                 </div>
                 <div class="menu-image">
                     <img id="menuImage" src="" alt="今日菜單" />
-                    <div id="magnifier" class="magnifier"></div>
                 </div>
                 <div class="menu-controls">
                     <button id="changeImageButton" class="btn btn-primary">
@@ -1019,62 +1005,6 @@
                 }
             }
 
-            // 菜單圖片放大鏡效果
-            function setupMagnifier() {
-                const magnifier = document.getElementById('magnifier');
-                const menuImage = document.getElementById('menuImage');
-                const menuImageContainer = document.querySelector('.menu-image');
-
-                menuImageContainer.addEventListener('mousemove', function (e) {
-                    const rect = menuImage.getBoundingClientRect();
-                    // 取得滑鼠相對於圖片的座標
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-
-                    // 確保只在圖片上顯示放大鏡
-                    if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-                        // 顯示放大鏡
-                        magnifier.style.display = "block";
-
-                        // 以滑鼠為中心，定位放大鏡
-                        let magnifierX = x - magnifier.offsetWidth / 2;
-                        let magnifierY = y - magnifier.offsetHeight / 2;
-                        
-                        // 確保放大鏡不超出圖片邊緣
-                        magnifierX = Math.max(0, Math.min(magnifierX, rect.width - magnifier.offsetWidth));
-                        magnifierY = Math.max(0, Math.min(magnifierY, rect.height - magnifier.offsetHeight));
-                        
-                        magnifier.style.left = magnifierX + "px";
-                        magnifier.style.top = magnifierY + "px";
-
-                        // 設定放大鏡背景為當前圖片，並以 4 倍放大
-                        magnifier.style.backgroundImage = `url('${menuImage.src}')`;
-                        magnifier.style.backgroundSize = (menuImage.width * 4) + "px " + (menuImage.height * 4) + "px";
-
-                        // 計算背景位置，使得滑鼠所在處的區域置中於放大鏡內
-                        const bgX = -x * 4 + magnifier.offsetWidth / 2;
-                        const bgY = -y * 4 + magnifier.offsetHeight / 2;
-                        magnifier.style.backgroundPosition = `${bgX}px ${bgY}px`;
-                    } else {
-                        magnifier.style.display = "none";
-                    }
-                });
-
-                menuImageContainer.addEventListener('mouseleave', function () {
-                    magnifier.style.display = "none";
-                });
-
-                // 點擊菜單圖片時顯示模態視窗
-                menuImage.addEventListener('click', function() {
-                    if (!this.src || this.src === "" || this.src.includes("placeholder")) return;
-                    
-                    const modal = document.getElementById('imageModal');
-                    const modalImg = document.getElementById('modalImage');
-                    modal.style.display = "block";
-                    modalImg.src = this.src;
-                });
-            }
-
             // 初始化事件監聽器
             function initEventListeners() {
                 // 表單提交事件
@@ -1197,6 +1127,16 @@
                     }
                 });
 
+                // 點擊菜單圖片時顯示模態視窗
+                document.getElementById('menuImage').addEventListener('click', function() {
+                    if (!this.src || this.src === "" || this.src.includes("placeholder")) return;
+                    
+                    const modal = document.getElementById('imageModal');
+                    const modalImg = document.getElementById('modalImage');
+                    modal.style.display = "block";
+                    modalImg.src = this.src;
+                });
+
                 // 導出、清除、刪除按鈕事件
                 document.getElementById('exportButton').addEventListener('click', exportToExcel);
                 document.getElementById('clearButton').addEventListener('click', clearAllOrders);
@@ -1207,7 +1147,6 @@
             updateDateTime();
             loadOrdersFromDatabase();
             loadMenuImage();
-            setupMagnifier();
             initEventListeners();
             
             // 定時更新日期時間
