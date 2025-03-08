@@ -1,6 +1,13 @@
 td.checkbox-center {
-            width: 80px;
+            width: 60px;
             box-sizing: border-box;
+            padding-right: 0;
+            border-right: 0;
+        }
+        
+        #orderTable td:nth-child(2) {
+            padding-left: 0;
+            border-left: 0;
         }<!DOCTYPE html>
 <html lang="zh-TW">
 
@@ -355,6 +362,7 @@ td.checkbox-center {
             border-collapse: collapse;
             border-radius: 10px;
             overflow: hidden;
+            border-spacing: 0;
         }
 
         th,
@@ -439,19 +447,25 @@ td.checkbox-center {
             text-align: center;
             vertical-align: middle;
             border-bottom: 1px solid var(--border-color);
+            border-right: none;
+            border-left: none;
         }
 
         #orderTable th.checkbox-center {
-            width: 80px;
+            width: 60px;
             text-align: center;
             box-sizing: border-box;
             background-clip: padding-box;
+            padding-right: 0;
+            border-right: 0;
         }
-
+        
         #orderTable th:nth-child(2) {
             width: 60px;
             padding: 1rem;
+            padding-left: 0;
             box-sizing: border-box;
+            border-left: 0;
         }
 
         #orderTable {
